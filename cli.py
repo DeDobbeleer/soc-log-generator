@@ -122,6 +122,9 @@ def cmd_generate(args: argparse.Namespace) -> int:
         from .generators.network.proxy import ProxyGenerator
         from .generators.network.dns import DNSGenerator
         from .generators.network.ids import IDSensorGenerator
+        from .generators.cloud.aws_cloudtrail import AWSCloudTrailGenerator
+        from .generators.cloud.azure_activity import AzureActivityGenerator
+        from .generators.cloud.o365 import Office365Generator
     except ImportError:
         from generators.endpoint.windows import WindowsEventGenerator
         from generators.endpoint.linux_generator import LinuxAuthGenerator
@@ -130,6 +133,9 @@ def cmd_generate(args: argparse.Namespace) -> int:
         from generators.network.proxy import ProxyGenerator
         from generators.network.dns import DNSGenerator
         from generators.network.ids import IDSensorGenerator
+        from generators.cloud.aws_cloudtrail import AWSCloudTrailGenerator
+        from generators.cloud.azure_activity import AzureActivityGenerator
+        from generators.cloud.o365 import Office365Generator
     
     # Create inventory
     inventory = AssetInventory()
@@ -156,6 +162,12 @@ def cmd_generate(args: argparse.Namespace) -> int:
         generator = DNSGenerator(gen_config, inventory)
     elif args.generator == 'ids':
         generator = IDSensorGenerator(gen_config, inventory)
+    elif args.generator == 'aws':
+        generator = AWSCloudTrailGenerator(gen_config, inventory)
+    elif args.generator == 'azure':
+        generator = AzureActivityGenerator(gen_config, inventory)
+    elif args.generator == 'o365':
+        generator = Office365Generator(gen_config, inventory)
     else:
         # Demo generator
         from datetime import datetime, timezone
@@ -565,7 +577,7 @@ For more information: https://github.com/example/soc-log-generator
     )
     gen_parser.add_argument(
         '--generator',
-        choices=['demo', 'windows', 'linux', 'nxlog', 'firewall', 'proxy', 'dns', 'ids'],
+        choices=['demo', 'windows', 'linux', 'nxlog', 'firewall', 'proxy', 'dns', 'ids', 'aws', 'azure', 'o365'],
         default='demo',
         help='Generator to use (default: demo)'
     )

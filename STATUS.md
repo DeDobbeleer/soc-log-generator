@@ -109,6 +109,38 @@ Migrated key features from `nxlog_simulator.py` (legacy) to `soc-log-generator`:
 
 ---
 
+### Phase 3: Cloud Sources 🔄 IN PROGRESS
+**Timeline:** 2024-03-07  
+**Progress:** 50%
+
+Cloud log generators for AWS, Azure, and Microsoft 365.
+
+| Task | ID | Status | Priority |
+|------|-----|--------|----------|
+| AWS CloudTrail generator | 3.1 | ✅ Complete | P0 |
+| AWS VPC Flow generator | 3.2 | 📝 Not Started | P1 |
+| Azure Activity Logs | 3.3 | ✅ Complete | P1 |
+| Azure AD Sign-in | 3.4 | 📝 Not Started | P1 |
+| Office 365 logs | 3.5 | ✅ Complete | P1 |
+| GCP Audit Logs | 3.6 | 📝 Not Started | P2 |
+
+**Implemented Generators:**
+
+| Generator | Workloads | Events | CLI |
+|-----------|-----------|--------|-----|
+| `AWSCloudTrailGenerator` | EC2, IAM, S3, Lambda, KMS, STS, CloudTrail, RDS | 50+ ops | `--generator aws` |
+| `AzureActivityGenerator` | Compute, Storage, Network, SQL, KeyVault, AAD | 60+ ops | `--generator azure` |
+| `Office365Generator` | Exchange, SharePoint, OneDrive, Teams, AAD | 40+ ops | `--generator o365` |
+
+**Features:**
+- Realistic JSON formats matching actual cloud provider logs
+- Multi-region/account support
+- User/ServicePrincipal identity simulation
+- Error scenarios (5-10% rate)
+- Severity mapping based on operation type
+
+---
+
 ### Phase 3: Cloud Sources ⏸️ NOT STARTED
 **Timeline:** Week 7-8  
 **Progress:** 0%
