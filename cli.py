@@ -123,8 +123,11 @@ def cmd_generate(args: argparse.Namespace) -> int:
         from .generators.network.dns import DNSGenerator
         from .generators.network.ids import IDSensorGenerator
         from .generators.cloud.aws_cloudtrail import AWSCloudTrailGenerator
+        from .generators.cloud.aws_vpcflow import AWSVPCFlowGenerator
         from .generators.cloud.azure_activity import AzureActivityGenerator
+        from .generators.cloud.azure_signin import AzureSignInGenerator
         from .generators.cloud.o365 import Office365Generator
+        from .generators.cloud.gcp_audit import GCPAuditGenerator
     except ImportError:
         from generators.endpoint.windows import WindowsEventGenerator
         from generators.endpoint.linux_generator import LinuxAuthGenerator
@@ -134,8 +137,11 @@ def cmd_generate(args: argparse.Namespace) -> int:
         from generators.network.dns import DNSGenerator
         from generators.network.ids import IDSensorGenerator
         from generators.cloud.aws_cloudtrail import AWSCloudTrailGenerator
+        from generators.cloud.aws_vpcflow import AWSVPCFlowGenerator
         from generators.cloud.azure_activity import AzureActivityGenerator
+        from generators.cloud.azure_signin import AzureSignInGenerator
         from generators.cloud.o365 import Office365Generator
+        from generators.cloud.gcp_audit import GCPAuditGenerator
     
     # Create inventory
     inventory = AssetInventory()
@@ -164,10 +170,16 @@ def cmd_generate(args: argparse.Namespace) -> int:
         generator = IDSensorGenerator(gen_config, inventory)
     elif args.generator == 'aws':
         generator = AWSCloudTrailGenerator(gen_config, inventory)
+    elif args.generator == 'aws-vpcflow':
+        generator = AWSVPCFlowGenerator(gen_config, inventory)
     elif args.generator == 'azure':
         generator = AzureActivityGenerator(gen_config, inventory)
+    elif args.generator == 'azure-signin':
+        generator = AzureSignInGenerator(gen_config, inventory)
     elif args.generator == 'o365':
         generator = Office365Generator(gen_config, inventory)
+    elif args.generator == 'gcp':
+        generator = GCPAuditGenerator(gen_config, inventory)
     else:
         # Demo generator
         from datetime import datetime, timezone
@@ -577,7 +589,8 @@ For more information: https://github.com/example/soc-log-generator
     )
     gen_parser.add_argument(
         '--generator',
-        choices=['demo', 'windows', 'linux', 'nxlog', 'firewall', 'proxy', 'dns', 'ids', 'aws', 'azure', 'o365'],
+        choices=['demo', 'windows', 'linux', 'nxlog', 'firewall', 'proxy', 'dns', 'ids',
+                 'aws', 'aws-vpcflow', 'azure', 'azure-signin', 'o365', 'gcp'],
         default='demo',
         help='Generator to use (default: demo)'
     )
