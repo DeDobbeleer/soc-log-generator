@@ -144,12 +144,10 @@ class AWSVPCFlowGenerator(BaseGenerator):
     def _get_port(self) -> Tuple[int, str]:
         """Get a random port and service name."""
         services = list(self.PORTS.keys())
-        ports, weights = zip(*[(p, w) for p, (p_num, w) in zip([self.PORTS[s][0] for s in services], [self.PORTS[s][1] for s in services])])
-        # Fix: properly extract ports and weights
         port_list = [self.PORTS[s][0] for s in services]
         weight_list = [self.PORTS[s][1] for s in services]
         port = random.choices(port_list, weights=weight_list)[0]
-        service = [s for s, (p, _) in self.PORTS.items() if p == port][0]
+        service = [s for s in services if self.PORTS[s][0] == port][0]
         return port, service
     
     def _get_protocol(self) -> Tuple[int, str]:
@@ -222,7 +220,7 @@ class AWSVPCFlowGenerator(BaseGenerator):
         
         # Build flow record (v2 format)
         record = {
-            "version": "2",
+            "version": 2,
             "account_id": account_id,
             "interface_id": eni,
             "srcaddr": src_ip,
@@ -284,7 +282,7 @@ class AWSVPCFlowGenerator(BaseGenerator):
     def _format_default(self, record: Dict[str, Any]) -> str:
         """Format as default VPC Flow Log (v2)."""
         return " ".join([
-            record["version"],
+            str(record["version"]),
             record["account_id"],
             record["interface_id"],
             record["srcaddr"],
@@ -303,7 +301,7 @@ class AWSVPCFlowGenerator(BaseGenerator):
     def _format_custom(self, record: Dict[str, Any]) -> str:
         """Format with all available fields."""
         fields = [
-            record["version"],
+            str(record["version"]),
             record["vpc_id"],
             record["subnet_id"],
             record["instance_id"],

@@ -247,7 +247,7 @@ class AzureSignInGenerator(BaseGenerator):
         app_id = self.APPS[app_name]
         
         # Determine risk
-        risk_level, _ = random.choices(
+        risk_level = random.choices(
             [r for r, _ in self.RISK_LEVELS],
             [w for _, w in self.RISK_LEVELS]
         )[0]

@@ -226,13 +226,25 @@ class LogValidator:
         return batch_report
     
     def _event_to_dict(self, event: Any) -> Dict[str, Any]:
-        """Convert event to dictionary."""
+        """Convert event to dictionary, flattening nested fields."""
+        result = {}
+        
         if hasattr(event, '__dict__'):
-            return event.__dict__
+            result.update(event.__dict__)
         elif isinstance(event, dict):
-            return event
-        else:
-            return {}
+            result.update(event)
+        
+        # Flatten nested 'fields' dict (common in our generators)
+        if 'fields' in result and isinstance(result['fields'], dict):
+            result.update(result['fields'])
+        
+        # Convert enums to strings
+        from enum import Enum
+        for key, val in result.items():
+            if isinstance(val, Enum):
+                result[key] = val.name
+        
+        return result
     
     def _validate_field_value(self, value: Any, schema: FieldSchema) -> Tuple[bool, Optional[str]]:
         """
