@@ -1,0 +1,230 @@
+# SOC Log Generator - Configuration par defaut
+# Ce fichier configure les generateurs de logs pour simulation SOC/MSSP
+
+# Configuration globale
+global:
+  timezone: "UTC"
+  log_format: "ecs"  # ecs, cef, json
+  
+# Inventaire des assets (optionnel)
+# Si non specifie, un inventaire par defaut est genere
+inventory:
+  domains:
+    - corp.local
+    - dmz.corp.local
+    - admin.corp.local
+  
+  users:
+    - username: jdoe
+      domain: corp.local
+      dept: IT
+      role: admin
+    - username: asmith
+      domain: corp.local
+      dept: HR
+      role: user
+    - username: mrobert
+      domain: corp.local
+      dept: Finance
+      role: user
+
+# Generateurs de logs
+generators:
+  # Windows Event Logs
+  windows:
+    enabled: true
+    type: windows
+    eps: 150              # Events per second de base
+    weight: 1.0           # Poids relatif par rapport aux autres generateurs
+    business_hours_mult: 2.0  # Multiplicateur heures de bureau
+    
+    # Canaux Windows a generer
+    channels:
+      - Security
+      - System
+      - Application
+      - Sysmon
+      - PowerShell
+    
+    # Distribution des canaux (doit sommer a 100)
+    channel_weights:
+      - 50   # Security
+      - 15   # System
+      - 10   # Application
+      - 20   # Sysmon
+      - 5    # PowerShell
+
+  # Linux Logs (syslog, auditd, auth)
+  linux:
+    enabled: true
+    type: linux
+    eps: 80
+    weight: 0.8
+    business_hours_mult: 1.5
+    
+    # Services a simuler
+    services:
+      - sshd
+      - sudo
+      - cron
+      - auditd
+      - kernel
+    
+    # Distribution des services
+    service_weights:
+      - 40   # sshd
+      - 25   # sudo
+      - 10   # cron
+      - 15   # auditd
+      - 10   # kernel
+
+  # Firewalls
+  firewall:
+    enabled: true
+    type: firewall
+    vendor: paloalto      # paloalto, fortinet, cisco_asa
+    eps: 300
+    weight: 1.5
+    
+    # Types de logs
+    log_types:
+      - TRAFFIC
+      - THREAT
+      - URL
+      - DATA
+    
+    # Distribution traffic vs threat
+    threat_ratio: 0.05    # 5% de logs de menace
+
+  # Proxy Web (optionnel)
+  proxy:
+    enabled: false
+    type: proxy
+    vendor: bluecoat      # bluecoat, squid, zscaler
+    eps: 100
+    weight: 0.5
+
+  # DNS Logs (optionnel)
+  dns:
+    enabled: false
+    type: dns
+    vendor: infoblox      # infoblox, bind, windows_dns
+    eps: 500
+    weight: 2.0
+
+  # Cloud - AWS (optionnel)
+  aws:
+    enabled: false
+    type: cloud
+    service: cloudtrail
+    eps: 50
+    weight: 0.3
+
+  # Cloud - Azure (optionnel)
+  azure:
+    enabled: false
+    type: cloud
+    service: sentinel
+    eps: 40
+    weight: 0.25
+
+  # Office 365 (optionnel)
+  o365:
+    enabled: false
+    type: cloud
+    service: o365
+    eps: 60
+    weight: 0.4
+
+  # EDR - CrowdStrike (optionnel)
+  crowdstrike:
+    enabled: false
+    type: edr
+    eps: 30
+    weight: 0.2
+
+  # EDR - Microsoft Defender (optionnel)
+  defender:
+    enabled: false
+    type: edr
+    eps: 25
+    weight: 0.15
+
+# Scenarios d'attaque a injecter
+scenarios:
+  enabled: true
+  
+  # Liste des scenarios disponibles
+  available:
+    - brute_force_ssh
+    - lateral_movement_smb
+    - data_exfiltration_dns
+    - ransomware_behavior
+    - phishing_campaign
+    - insider_threat
+  
+  # Probabilite d'injection d'un scenario (par heure)
+  injection_probability: 0.1
+  
+  # Configuration specifique des scenarios
+  brute_force_ssh:
+    duration: 300         # 5 minutes
+    attempts: 50
+    target_users:
+      - root
+      - admin
+      - administrator
+  
+  lateral_movement:
+    duration: 600
+    techniques:
+      - psexec
+      - wmi_exec
+      - scheduled_task
+
+# Configuration des sorties
+outputs:
+  # Sortie fichier local
+  - type: file
+    path: /var/log/soc-generator/logs.json
+    rotation_size: 100MB
+    format: json
+  
+  # Sortie Syslog TCP
+  - type: syslog
+    host: 10.0.0.1
+    port: 514
+    protocol: tcp
+    format: syslog        # syslog, json, cef
+  
+  # Sortie Syslog UDP (optionnel)
+  # - type: syslog
+  #   host: 10.0.0.2
+  #   port: 514
+  #   protocol: udp
+  #   format: json
+
+# Parametres de performance
+performance:
+  # Nombre de threads de generation
+  threads: 4
+  
+  # Taille du buffer d'evenements
+  buffer_size: 10000
+  
+  # Mode batch pour haut debit
+  batch_mode: true
+  batch_size: 100
+
+# Monitoring et metriques
+monitoring:
+  # Affiche les stats toutes les N secondes
+  stats_interval: 5
+  
+  # Active les metriques Prometheus
+  prometheus_enabled: false
+  prometheus_port: 9090
+  
+  # Health check endpoint
+  health_check: false
+  health_check_port: 8080

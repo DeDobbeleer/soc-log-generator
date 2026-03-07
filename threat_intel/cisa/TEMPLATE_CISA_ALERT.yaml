@@ -1,0 +1,359 @@
+# CISA Alert Scenario Template
+# Based on CISA Alert AA format
+# Reference: https://www.cisa.gov/alerts
+
+alert:
+  # CISA Alert metadata
+  id: "AA24-XXX#"                    # CISA Alert ID
+  title: "Alert Title"
+  release_date: "YYYY-MM-DD"
+  severity: "Critical|High|Medium|Low"
+  
+  # Attribution
+  threat_actor: "APT29|Lazarus|Unknown"
+  threat_actor_aliases:
+    - "Cozy Bear"
+    - "The Dukes"
+  
+  # Campaign information
+  campaign:
+    name: "Campaign Name"
+    first_seen: "YYYY-MM-DD"
+    target_sectors:
+      - "Government"
+      - "Defense"
+      - "Healthcare"
+      - "Finance"
+      - "Technology"
+    target_countries:
+      - "US"
+      - "UK"
+      - "EU"
+    
+  # MITRE ATT&CK mapping
+  mitre_attack:
+    tactics:
+      - "TA0001"    # Initial Access
+      - "TA0002"    # Execution
+      - "TA0003"    # Persistence
+      - "TA0004"    # Privilege Escalation
+      - "TA0005"    # Defense Evasion
+      - "TA0006"    # Credential Access
+      - "TA0007"    # Discovery
+      - "TA0008"    # Lateral Movement
+      - "TA0009"    # Collection
+      - "TA0010"    # Exfiltration
+      - "TA0011"    # Command and Control
+    techniques:
+      - id: "T1566.001"
+        name: "Phishing: Spearphishing Attachment"
+        procedure: "Malicious Office document with macro"
+      - id: "T1059.001"
+        name: "Command and Scripting Interpreter: PowerShell"
+        procedure: "Encoded PowerShell commands"
+      - id: "T1053.005"
+        name: "Scheduled Task/Job: Scheduled Task"
+        procedure: "Persistence via scheduled task"
+    
+  # Technical details
+  technical_details:
+    initial_access:
+      vector: "Phishing"
+      description: "Detailed description of initial access"
+      iocs:
+        domains:
+          - "malicious-domain.com"
+          - "c2-server.net"
+        ips:
+          - "192.168.1.100"
+          - "10.0.0.50"
+        file_hashes:
+          md5:
+            - "d41d8cd98f00b204e9800998ecf8427e"
+          sha256:
+            - "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        filenames:
+          - "Invoice.doc"
+          - "Update.exe"
+        
+    execution:
+      methods:
+        - "PowerShell"
+        - "WMI"
+        - "Command Shell"
+      commands:
+        - "powershell.exe -enc UEsDBBQ..."
+        - "cmd.exe /c whoami > %temp%\\out.txt"
+        
+    persistence:
+      methods:
+        - "Registry Run Keys"
+        - "Scheduled Tasks"
+        - "WMI Event Subscription"
+        
+    privilege_escalation:
+      methods:
+        - "Token Impersonation"
+        - "Bypass User Account Control"
+        
+    defense_evasion:
+      methods:
+        - "Process Injection"
+        - "Timestomp"
+        - "Disable Security Tools"
+        
+    credential_access:
+      methods:
+        - "LSASS Memory"
+        - "SAM Database"
+        - "Kerberoasting"
+        
+    lateral_movement:
+      methods:
+        - "PsExec"
+        - "WMI"
+        - "SMB/Windows Admin Shares"
+        
+    collection:
+      methods:
+        - "Screen Capture"
+        - "Clipboard Data"
+        - "Email Collection"
+        
+    exfiltration:
+      methods:
+        - "Exfiltration Over C2 Channel"
+        - "Exfiltration to Cloud Storage"
+      channels:
+        - protocol: "HTTPS"
+          domain: "cdn.evil-domain.com"
+          user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+          
+    command_and_control:
+      protocols:
+        - "HTTPS"
+        - "DNS"
+      domains:
+        - "cdn.evil-domain.com"
+        - "update-service.net"
+      ips:
+        - "185.220.101.42"
+        - "192.42.116.203"
+
+# Scenario definition for generator
+scenario:
+  name: "{{ alert.campaign.name }}"
+  description: "{{ alert.title }}"
+  
+  # Duration configuration
+  duration:
+    total: 86400              # Total campaign duration in seconds (24 hours)
+    phases:
+      - name: "initial_access"
+        duration: 3600        # 1 hour
+        start_offset: 0
+        
+      - name: "execution_persistence"
+        duration: 7200        # 2 hours
+        start_offset: 3600
+        
+      - name: "discovery_privesc"
+        duration: 10800       # 3 hours
+        start_offset: 10800
+        
+      - name: "lateral_movement"
+        duration: 14400       # 4 hours
+        start_offset: 21600
+        
+      - name: "collection_exfiltration"
+        duration: 7200        # 2 hours
+        start_offset: 36000
+        
+  # Event generation rules
+  events:
+    initial_access:
+      sources:
+        - type: "windows"
+          channel: "Security"
+          event_ids: [4624, 4648]    # Logon events
+          weight: 0.3
+          
+        - type: "proxy"
+          events: ["web_access"]
+          urls:
+            - "https://malicious-domain.com/download/payload.exe"
+          weight: 0.5
+          
+        - type: "email_gateway"
+          events: ["email_received", "attachment_detected"]
+          subjects:
+            - "Urgent: Invoice Payment Required"
+            - "Action Required: Document Review"
+          attachments:
+            - "Invoice_Q1_2024.doc"
+            - "Contract_Updates.docm"
+          weight: 0.2
+          
+    execution:
+      sources:
+        - type: "windows"
+          channel: "Security"
+          event_ids: [4688]          # Process creation
+          processes:
+            - name: "powershell.exe"
+              command_line_patterns:
+                - "-enc"
+                - "-EncodedCommand"
+                - "IEX"
+                - "Invoke-Expression"
+            - name: "cmd.exe"
+              command_line_patterns:
+                - "/c"
+                - "/k"
+          weight: 0.4
+          
+        - type: "sysmon"
+          event_ids: [1]             # Process create
+          weight: 0.4
+          
+        - type: "windows"
+          channel: "PowerShell"
+          event_ids: [4103, 4104]    # PowerShell execution
+          weight: 0.2
+          
+    persistence:
+      sources:
+        - type: "windows"
+          channel: "Security"
+          event_ids: [4688, 4697, 4698]  # Process, service, scheduled task
+          weight: 0.6
+          
+        - type: "sysmon"
+          event_ids: [12, 13]        # Registry events
+          registry_keys:
+            - "HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run"
+            - "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run"
+          weight: 0.4
+          
+    lateral_movement:
+      sources:
+        - type: "windows"
+          channel: "Security"
+          event_ids: [4624, 4648, 4688]  # Logon, explicit creds, process
+          logon_types: [3, 9]          # Network, NewCredentials
+          processes:
+            - "psexec.exe"
+            - "psexecsvc.exe"
+            - "wmic.exe"
+            - "winrm.exe"
+          weight: 0.5
+          
+        - type: "firewall"
+          events: ["traffic"]
+          dst_ports: [445, 135, 5985, 5986]
+          weight: 0.3
+          
+        - type: "sysmon"
+          event_ids: [3]             # Network connection
+          dst_ports: [445, 135, 5985]
+          weight: 0.2
+          
+    exfiltration:
+      sources:
+        - type: "firewall"
+          events: ["traffic"]
+          dst_domains:
+            - "cdn.evil-domain.com"
+            - "update-service.net"
+          bytes_threshold: 100000000   # 100MB
+          weight: 0.4
+          
+        - type: "dns"
+          events: ["query"]
+          query_patterns:
+            - "[a-z0-9]{30,50}\.cdn\.evil-domain\.com"
+          query_types: ["TXT"]
+          frequency_threshold: 1000    # queries per hour
+          weight: 0.3
+          
+        - type: "proxy"
+          events: ["web_access"]
+          dst_domains:
+            - "*.dropbox.com"
+            - "*.onedrive.com"
+            - "drive.google.com"
+          upload_size_threshold: 50000000  # 50MB
+          weight: 0.3
+
+  # Correlation rules
+  correlation:
+    - name: "suspicious_powershell"
+      description: "Encoded PowerShell followed by network connection"
+      sequence:
+        - event: "sysmon"
+          event_id: 1
+          condition: "Image contains 'powershell' AND CommandLine contains '-enc'"
+          window: 300
+        - event: "sysmon"
+          event_id: 3
+          condition: "ProcessId matches ${previous.ProcessId}"
+      severity: "HIGH"
+      
+    - name: "lateral_movement_detection"
+      description: "Multiple logon type 3 from single source"
+      sequence:
+        - event: "windows"
+          event_id: 4624
+          condition: "LogonType = 3"
+          aggregate:
+            field: "IpAddress"
+            threshold: 10
+            window: 600
+      severity: "MEDIUM"
+      
+    - name: "data_exfiltration"
+      description: "Large outbound transfer to rare domain"
+      sequence:
+        - event: "firewall"
+          event_type: "traffic"
+          condition: "bytes_sent > 100000000 AND dst_domain not in top_domains"
+      severity: "HIGH"
+
+  # Variations for realism
+  variations:
+    - name: "stealth_mode"
+      description: "Lower volume, more realistic timing"
+      multiplier: 0.3
+      timing_jitter: 0.5
+      
+    - name: "aggressive_mode"
+      description: "High volume, compressed timeline"
+      multiplier: 3.0
+      timing_jitter: 0.1
+      
+    - name: "distributed"
+      description: "Attack from multiple source IPs"
+      source_ip_count: 5
+      source_ip_variation: "random"
+
+# Detection recommendations
+detection:
+  sigma_rules:
+    - name: "suspicious_powershell_encoded"
+      status: "stable"
+      level: "high"
+      
+  splunk_searches:
+    - name: "Encoded PowerShell Detection"
+      query: |
+        index=windows EventCode=4688 (CommandLine="*-enc*" OR CommandLine="*-EncodedCommand*")
+        | stats count by Computer, User, CommandLine
+        | where count > 5
+        
+  kql_queries:
+    - name: "Lateral Movement Detection"
+      query: |
+        SecurityEvent
+        | where EventID == 4624 and LogonType == 3
+        | summarize dcount(Computer) by IpAddress, bin(TimeGenerated, 1h)
+        | where dcount_Computer > 5

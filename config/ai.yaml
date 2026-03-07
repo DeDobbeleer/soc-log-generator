@@ -1,0 +1,167 @@
+# SOC Log Generator - AI Configuration
+# Configuration for AI/LLM integration
+
+ai:
+  # Master switch for AI features
+  enabled: true
+  
+  # Default provider selection
+  default_provider: "ollama"  # ollama, openai, anthropic, google
+  
+  # Local AI via Ollama (recommended for privacy)
+  ollama:
+    enabled: true
+    host: "http://localhost:11434"
+    
+    # Model configuration for different tasks
+    models:
+      # Log format analysis - needs general understanding
+      analysis: 
+        model: "llama3:8b"
+        temperature: 0.3
+        timeout: 30
+      
+      # Parser generation - needs code generation capability
+      parser_generation:
+        model: "codellama:13b"
+        temperature: 0.2
+        timeout: 60
+      
+      # Scenario generation - needs creativity
+      scenario_generation:
+        model: "mistral:7b"
+        temperature: 0.7
+        timeout: 45
+      
+      # Natural language interface
+      nl_interface:
+        model: "llama3:8b"
+        temperature: 0.5
+        timeout: 30
+  
+  # OpenAI (GPT-4/GPT-3.5)
+  openai:
+    enabled: false
+    api_key: "${OPENAI_API_KEY}"  # Use env var
+    organization: "${OPENAI_ORG_ID}"  # Optional
+    
+    models:
+      analysis: "gpt-4"
+      parser_generation: "gpt-4"
+      scenario_generation: "gpt-4"
+      nl_interface: "gpt-3.5-turbo"
+    
+    # Rate limiting
+    rate_limit:
+      requests_per_minute: 60
+      tokens_per_minute: 90000
+  
+  # Anthropic (Claude)
+  anthropic:
+    enabled: false
+    api_key: "${ANTHROPIC_API_KEY}"
+    
+    models:
+      analysis: "claude-3-opus-20240229"
+      parser_generation: "claude-3-sonnet-20240229"
+      scenario_generation: "claude-3-opus-20240229"
+      nl_interface: "claude-3-haiku-20240307"
+  
+  # Google (Gemini)
+  google:
+    enabled: false
+    api_key: "${GOOGLE_API_KEY}"
+    
+    models:
+      analysis: "gemini-1.5-pro"
+      parser_generation: "gemini-1.5-pro"
+      scenario_generation: "gemini-1.5-pro"
+      nl_interface: "gemini-1.0-pro"
+
+# Feature-specific settings
+features:
+  # Log Learning System
+  log_learning:
+    enabled: true
+    min_samples: 10
+    max_samples: 1000
+    validation_split: 0.2
+    
+    # Pattern extraction settings
+    pattern_extraction:
+      use_llm: true
+      regex_fallback: true
+      
+    # Field mapping
+    ecs_mapping:
+      enabled: true
+      use_llm: true
+  
+  # Parser Generation
+  parser_generation:
+    enabled: true
+    
+    # Output formats
+    output_formats:
+      - "python"
+      - "grok"
+      - "regex"
+    
+    # Include validation code
+    include_tests: true
+  
+  # Scenario Generation
+  scenario_generation:
+    enabled: true
+    
+    # Sources for scenario generation
+    sources:
+      - "mitre_attack"
+      - "cisa_alerts"
+      - "ctid_reports"
+      - "user_description"
+    
+    # Realism settings
+    realism:
+      add_noise: true
+      vary_timing: true
+      include_false_positives: true
+  
+  # Web Research
+  web_research:
+    enabled: true
+    
+    sources:
+      github:
+        enabled: true
+        search_limit: 100
+      
+      stackoverflow:
+        enabled: true
+        api_key: "${STACKOVERFLOW_API_KEY}"
+      
+      vendor_docs:
+        enabled: true
+        
+        # List of vendor doc sites to scrape
+        sites:
+          - "https://docs.paloaltonetworks.com"
+          - "https://docs.fortinet.com"
+          - "https://docs.microsoft.com"
+          - "https://docs.splunk.com"
+    
+    # Update frequency
+    update_interval: "7d"  # Check for new formats weekly
+
+# Natural Language Interface
+natural_language:
+  enabled: true
+  
+  # Supported languages
+  languages:
+    - "en"
+    - "fr"
+    - "de"
+  
+  # Context retention
+  context_window: 10  # Number of previous exchanges to keep

