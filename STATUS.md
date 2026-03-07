@@ -3,7 +3,7 @@
 **Project:** SOC Log Generator  
 **Version:** 1.0.0-alpha  
 **Last Updated:** 2024-03-07  
-**Current Phase:** Phase 0 - Foundation (Planning)
+**Current Phase:** Legacy Integration + Phase 2 Completion
 
 ---
 
@@ -78,6 +78,34 @@
 | Proxy generator | 2.4 | ✅ Complete | P1 |
 | DNS generator | 2.5 | ✅ Complete | P2 |
 | IDS/IPS generator | 2.6 | ✅ Complete | P2 |
+
+---
+
+### Legacy Integration ✅ COMPLETE
+**Timeline:** 2024-03-07  
+**Progress:** 100%
+
+Migrated key features from `nxlog_simulator.py` (legacy) to `soc-log-generator`:
+
+| Component | Source | Status | Notes |
+|-----------|--------|--------|-------|
+| `SyslogClient` | nxlog_simulator.py | ✅ Integrated | TCP/UDP syslog with auto-reconnection |
+| `LoadController` | nxlog_simulator.py | ✅ Integrated | Ramp-up, burst, constant modes |
+| `StatsReporter` | nxlog_simulator.py | ✅ Integrated | Real-time statistics display |
+| Multi-client support | nxlog_simulator.py | ✅ Integrated | `--multi N` for parallel outputs |
+
+**CLI Enhancements:**
+- `--mode {constant,ramp,burst}` - Load control modes
+- `--start-eps EPS` - Starting EPS for ramp mode
+- `--ramp-time SECONDS` - Ramp duration
+- `--multi N` - Number of parallel output clients
+- `--generator {demo,windows,linux,nxlog,firewall,proxy,dns,ids}` - Generator selection
+
+**Code Changes:**
+- Added `core.py`: `SyslogClient` class (robust TCP/UDP with reconnection)
+- Added `load_controller.py`: `LoadController` + `StatsReporter` classes
+- Updated `cli.py`: Integrated load control and multi-client support
+- Updated generators: Added `--generator` selection in CLI
 
 ---
 

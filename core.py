@@ -850,6 +850,112 @@ class MultiOutput(OutputHandler):
         return f"MultiOutput({len(self.handlers)} handlers)"
 
 
+class SyslogClient:
+    """
+    Legacy syslog client with reconnection support.
+    
+    This class provides a simpler interface compatible with the legacy
+    nxlog_simulator.py codebase. It wraps socket operations with
+    automatic reconnection for TCP connections.
+    
+    Attributes:
+        target: Syslog server hostname/IP
+        port: Syslog server port
+        proto: Transport protocol ('tcp' or 'udp')
+        connected: Current connection status
+        stats: Statistics dictionary (sent, errors, reconnects)
+    """
+    
+    def __init__(self, target: str, port: int = 514, proto: str = "tcp"):
+        """
+        Initialize syslog client.
+        
+        Args:
+            target: Syslog server hostname or IP
+            port: Syslog server port (default: 514)
+            proto: Protocol - 'tcp' or 'udp' (default: tcp)
+        """
+        self.target = target
+        self.port = port
+        self.proto = proto.lower()
+        self.sock = None
+        self.connected = False
+        self.lock = threading.Lock()
+        self.stats = {"sent": 0, "errors": 0, "reconnects": 0}
+        
+        self._connect()
+    
+    def _connect(self) -> bool:
+        """Establish connection to syslog server."""
+        try:
+            if self.sock:
+                try:
+                    self.sock.close()
+                except:
+                    pass
+            
+            if self.proto == "tcp":
+                self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self.sock.settimeout(10)
+                self.sock.connect((self.target, self.port))
+                self.connected = True
+            else:  # UDP
+                self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                self.connected = True
+            
+            self.stats["reconnects"] += 1
+            logger.debug(f"SyslogClient connected to {self.target}:{self.port}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"SyslogClient connection failed: {e}")
+            self.connected = False
+            return False
+    
+    def send(self, msg: str) -> bool:
+        """
+        Send a message to the syslog server.
+        
+        Args:
+            msg: Message to send
+            
+        Returns:
+            True if successful
+        """
+        with self.lock:
+            data = (msg + "\n").encode('utf-8', errors='ignore')
+            try:
+                if self.proto == "tcp":
+                    if not self.connected:
+                        if not self._connect():
+                            self.stats["errors"] += 1
+                            return False
+                    self.sock.sendall(data)
+                else:
+                    self.sock.sendto(data, (self.target, self.port))
+                
+                self.stats["sent"] += 1
+                return True
+                
+            except Exception as e:
+                self.stats["errors"] += 1
+                self.connected = False
+                logger.debug(f"SyslogClient send error: {e}")
+                return False
+    
+    def close(self) -> None:
+        """Close the connection."""
+        if self.sock:
+            try:
+                self.sock.close()
+            except:
+                pass
+        self.connected = False
+    
+    def __repr__(self) -> str:
+        return f"SyslogClient({self.target}:{self.port}/{self.proto})"
+
+
 # Export public API
 __all__ = [
     'EventSeverity',
@@ -861,6 +967,7 @@ __all__ = [
     'FileOutput',
     'SyslogOutput',
     'MultiOutput',
+    'SyslogClient',
 ]
 
 

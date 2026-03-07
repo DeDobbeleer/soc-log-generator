@@ -107,15 +107,86 @@ def cmd_generate(args: argparse.Namespace) -> int:
     logger = logging.getLogger("soc_log_generator.cli.generate")
     logger.info("Starting log generation")
     
+    # Import load controller
+    try:
+        from .load_controller import LoadController, StatsReporter
+    except ImportError:
+        from load_controller import LoadController, StatsReporter
+    
+    # Import generators
+    try:
+        from .generators.endpoint.windows import WindowsEventGenerator
+        from .generators.endpoint.linux_generator import LinuxAuthGenerator
+        from .generators.endpoint.nxlog_windows import NXLogWindowsGenerator
+        from .generators.network.firewall import FirewallGenerator
+        from .generators.network.proxy import ProxyGenerator
+        from .generators.network.dns import DNSGenerator
+        from .generators.network.ids import IDSensorGenerator
+    except ImportError:
+        from generators.endpoint.windows import WindowsEventGenerator
+        from generators.endpoint.linux_generator import LinuxAuthGenerator
+        from generators.endpoint.nxlog_windows import NXLogWindowsGenerator
+        from generators.network.firewall import FirewallGenerator
+        from generators.network.proxy import ProxyGenerator
+        from generators.network.dns import DNSGenerator
+        from generators.network.ids import IDSensorGenerator
+    
     # Create inventory
     inventory = AssetInventory()
     logger.info(f"Loaded inventory: {inventory}")
     
-    # Create output handler
-    output = create_output_handler(args)
+    # Create output handlers (multi-client support)
+    outputs = []
+    for _ in range(args.multi):
+        outputs.append(create_output_handler(args))
+    
+    # Setup generator based on selection
+    gen_config = {'eps': args.eps}
+    if args.generator == 'windows':
+        generator = WindowsEventGenerator(gen_config, inventory)
+    elif args.generator == 'linux':
+        generator = LinuxAuthGenerator(gen_config, inventory)
+    elif args.generator == 'nxlog':
+        generator = NXLogWindowsGenerator(gen_config, inventory)
+    elif args.generator == 'firewall':
+        generator = FirewallGenerator(gen_config, inventory)
+    elif args.generator == 'proxy':
+        generator = ProxyGenerator(gen_config, inventory)
+    elif args.generator == 'dns':
+        generator = DNSGenerator(gen_config, inventory)
+    elif args.generator == 'ids':
+        generator = IDSensorGenerator(gen_config, inventory)
+    else:
+        # Demo generator
+        from datetime import datetime, timezone
+        class DemoGenerator:
+            def __init__(self, config, inventory): pass
+            def generate_event(self):
+                return LogEvent(
+                    timestamp=datetime.now(timezone.utc),
+                    source_type="demo",
+                    source_ip="10.0.0.1",
+                    source_host="DEMO-01",
+                    message="Demo event",
+                    raw_log="DEMO: event",
+                    fields={},
+                    tags=["demo"],
+                    severity=EventSeverity.LOW
+                )
+        generator = DemoGenerator(gen_config, inventory)
+    
+    logger.info(f"Using generator: {args.generator}")
+    
+    # Setup load controller for ramp/burst modes
+    controller = LoadController(
+        start_eps=args.start_eps,
+        max_eps=args.eps,
+        ramp_duration=args.ramp_time,
+        mode=args.mode
+    )
     
     # Setup rate limiting
-    limiter = RateLimiter(eps=args.eps)
+    limiter = RateLimiter(eps=args.start_eps if args.mode == 'ramp' else args.eps)
     
     # Track statistics
     stats = {
@@ -124,6 +195,9 @@ def cmd_generate(args: argparse.Namespace) -> int:
         "by_type": {},
         "by_severity": {}
     }
+    
+    # Setup stats reporter
+    reporter = StatsReporter(outputs, controller, args.stats_interval)
     
     # Setup signal handler for graceful shutdown
     running = True
@@ -135,16 +209,23 @@ def cmd_generate(args: argparse.Namespace) -> int:
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
     
+    # Print startup info
+    print(f"""
+    ╔════════════════════════════════════════════════════════╗
+    ║   SOC Log Generator - Generation Started               ║
+    ╠════════════════════════════════════════════════════════╣
+    ║  Generator: {args.generator:15} Mode: {args.mode:10}           ║
+    ║  Target:   {args.eps:6.1f} EPS        Clients: {args.multi:3}           ║
+    ║  Mode:     {args.mode:10}                                     ║
+    ╚════════════════════════════════════════════════════════╝
+    """)
+    
+    # Start stats reporter
+    reporter.start()
+    
     # Main generation loop
+    client_idx = 0
     try:
-        logger.info(f"Generating logs at {args.eps} EPS")
-        if args.duration:
-            logger.info(f"Duration: {args.duration} seconds")
-        else:
-            logger.info("Duration: unlimited (Ctrl+C to stop)")
-        
-        last_stats_time = time.time()
-        
         while running:
             # Check duration limit
             if args.duration:
@@ -153,37 +234,23 @@ def cmd_generate(args: argparse.Namespace) -> int:
                     logger.info(f"Duration limit reached ({args.duration}s)")
                     break
             
-            # Generate a sample event (for now, demo event)
-            from datetime import datetime, timezone
-            event = LogEvent(
-                timestamp=datetime.now(timezone.utc),
-                source_type="demo",
-                source_ip="10.0.0.1",
-                source_host="DEMO-01",
-                message=f"Generated event #{stats['generated'] + 1}",
-                raw_log=f"DEMO: Event {stats['generated'] + 1}",
-                fields={"seq": stats["generated"] + 1},
-                tags=["demo", "generated"],
-                severity=EventSeverity.LOW
-            )
+            # Update EPS for ramp/burst modes
+            if args.mode in ['ramp', 'burst']:
+                current_eps = controller.update()
+                limiter.update_rate(current_eps)
+                reporter.update_stats(stats["generated"], 0)
             
-            # Write to output
-            if output.write(event):
+            # Generate event
+            event = generator.generate_event()
+            
+            # Write to output (round-robin)
+            if outputs[client_idx].write(event):
                 stats["generated"] += 1
                 stats["by_type"][event.source_type] = stats["by_type"].get(event.source_type, 0) + 1
                 stats["by_severity"][event.severity.name] = stats["by_severity"].get(event.severity.name, 0) + 1
             
-            # Print statistics periodically
-            now = time.time()
-            if now - last_stats_time >= args.stats_interval:
-                elapsed = now - stats["start_time"]
-                current_eps = stats["generated"] / elapsed if elapsed > 0 else 0
-                logger.info(
-                    f"Generated: {stats['generated']:,} events | "
-                    f"Rate: {current_eps:.1f} EPS | "
-                    f"By type: {stats['by_type']}"
-                )
-                last_stats_time = now
+            # Next client
+            client_idx = (client_idx + 1) % len(outputs)
             
             # Rate limiting
             limiter.acquire()
@@ -191,7 +258,9 @@ def cmd_generate(args: argparse.Namespace) -> int:
     except KeyboardInterrupt:
         logger.info("Interrupted by user")
     finally:
-        output.close()
+        reporter.stop()
+        for out in outputs:
+            out.close()
         
         # Final statistics
         elapsed = time.time() - stats["start_time"]
@@ -466,6 +535,39 @@ For more information: https://github.com/example/soc-log-generator
         '-c', '--config',
         metavar='FILE',
         help='Configuration file (YAML)'
+    )
+    gen_parser.add_argument(
+        '--mode',
+        choices=['constant', 'ramp', 'burst'],
+        default='constant',
+        help='Generation mode: constant, ramp (progressive), burst (random spikes) (default: constant)'
+    )
+    gen_parser.add_argument(
+        '--start-eps',
+        type=float,
+        default=10.0,
+        metavar='EPS',
+        help='Starting EPS for ramp mode (default: 10)'
+    )
+    gen_parser.add_argument(
+        '--ramp-time',
+        type=int,
+        default=300,
+        metavar='SECONDS',
+        help='Ramp duration in seconds (default: 300)'
+    )
+    gen_parser.add_argument(
+        '--multi',
+        type=int,
+        default=1,
+        metavar='N',
+        help='Number of parallel output clients (default: 1)'
+    )
+    gen_parser.add_argument(
+        '--generator',
+        choices=['demo', 'windows', 'linux', 'nxlog', 'firewall', 'proxy', 'dns', 'ids'],
+        default='demo',
+        help='Generator to use (default: demo)'
     )
     gen_parser.set_defaults(func=cmd_generate)
     
