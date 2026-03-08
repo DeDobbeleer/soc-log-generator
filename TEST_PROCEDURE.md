@@ -1,42 +1,42 @@
-# Procédure de Test sur SIEM - Cahier de Test
+# SIEM Test Procedure - Test Logbook
 
-> **Document à remplir manuellement lors des tests sur SIEM réels**
+> **Document to be filled manually during live SIEM testing**
 
 ---
 
-## 1. Préparation du Test
+## 1. Test Preparation
 
-### 1.1 Environnement de Test
+### 1.1 Test Environment
 
 ```
 Date: _______________
-Testeur: _______________
-SIEM Cible: □ LogPoint □ Splunk □ Elastic □ QRadar □ Autre: _______
-Version SIEM: _______________
-Environnement: □ Prod □ Staging □ Lab
+Tester: _______________
+Target SIEM: □ LogPoint □ Splunk □ Elastic □ QRadar □ Other: _______
+SIEM Version: _______________
+Environment: □ Prod □ Staging □ Lab
 ```
 
-### 1.2 Collecteur/Forwarder
+### 1.2 Collector/Forwarder
 
 ```
-Type de collecteur: □ Syslog UDP □ Syslog TCP □ Agent □ API □ S3
-IP Collecteur: _______________
+Collector Type: □ Syslog UDP □ Syslog TCP □ Agent □ API □ S3
+Collector IP: _______________
 Port: _______________
-Protocole: □ UDP □ TCP □ TLS
+Protocol: □ UDP □ TCP □ TLS
 ```
 
 ---
 
-## 2. Commandes de Test par Source
+## 2. Test Commands by Source
 
 ### 2.1 Windows Events → SIEM
 
-**Génération vers Syslog:**
+**Generation to Syslog:**
 ```bash
-# Test basique - 100 EPS pendant 60 secondes
+# Basic test - 100 EPS for 60 seconds
 python3 -m soc_log_generator generate \
   --generator windows \
-  --syslog-host <IP_SIEM> \
+  --syslog-host <SIEM_IP> \
   --syslog-port 514 \
   --syslog-protocol tcp \
   --eps 100 \
@@ -45,146 +45,147 @@ python3 -m soc_log_generator generate \
 ```
 
 **Options:**
-- `--eps 100` : Events par seconde (ajuster selon capacité SIEM)
-- `--duration 60` : Durée en secondes (0 = illimité)
-- `--syslog-format syslog` : Format syslog natif
-- `--syslog-format json` : Format JSON
-- `--syslog-format cef` : Format CEF (pour ArcSight/QRadar)
+- `--eps 100` : Events per second (adjust based on SIEM capacity)
+- `--duration 60` : Duration in seconds (0 = unlimited)
+- `--syslog-format syslog` : Native syslog format
+- `--syslog-format json` : JSON format
+- `--syslog-format cef` : CEF format (for ArcSight/QRadar)
 
-**À vérifier dans le SIEM:**
+**Verify in SIEM:**
 ```
-□ Events reçus: _______
-□ Parsing correct: □ Oui □ Non
-□ Champs extraits: _______________
-□ Timestamp correct: □ Oui □ Non
-□ Source IP identifiée: □ Oui □ Non
-□ Severité mapping correct: □ Oui □ Non
+□ Events received: _______
+□ Parsing correct: □ Yes □ No
+□ Fields extracted: _______________
+□ Timestamp correct: □ Yes □ No
+□ Source IP identified: □ Yes □ No
+□ Severity mapping correct: □ Yes □ No
 ```
 
 ---
 
 ### 2.2 Linux Auth → SIEM
 
-**Génération:**
+**Generation:**
 ```bash
-# Format syslog standard
+# Standard syslog format
 python3 -m soc_log_generator generate \
   --generator linux \
-  --syslog-host <IP_SIEM> \
+  --syslog-host <SIEM_IP> \
   --syslog-port 514 \
   --eps 50 \
   --duration 120
 ```
 
-**Scénario spécifique (brute force SSH):**
+**Specific scenario (SSH brute force):**
 ```bash
-# Générer beaucoup d'échecs SSH
+# Generate many SSH failures
 python3 -m soc_log_generator generate \
   --generator linux \
   --mode burst \
   --start-eps 10 \
-  --eps 500 \
-  --ramp-time 30 \
+  --eps 100 \
+  --ramp-time 10 \
   --duration 60
 ```
 
-**À vérifier:**
+**Verify:**
 ```
-□ Events reçus: _______
-□ Username extrait: □ Oui □ Non
-□ IP source extraite: □ Oui □ Non
-□ Type d'authentification: □ Oui □ Non
-□ Alerte déclenchée: □ Oui □ Non (laquelle: _______)
+□ Events received: _______
+□ Username extracted: □ Yes □ No
+□ Source IP extracted: □ Yes □ No
+□ Authentication type: □ Yes □ No
+□ Alert triggered: □ Yes □ No (which: _______)
 ```
 
 ---
 
 ### 2.3 Firewall (Palo Alto) → SIEM
 
-**Génération CEF (recommandé pour ArcSight/QRadar):**
+**CEF Generation (recommended for ArcSight/QRadar):**
 ```bash
 python3 -m soc_log_generator generate \
   --generator firewall \
-  --syslog-host <IP_SIEM> \
+  --syslog-host <SIEM_IP> \
   --syslog-port 514 \
+  --syslog-protocol tcp \
   --syslog-format cef \
   --eps 1000 \
   --duration 300
 ```
 
-**Génération JSON (pour Splunk/Elastic):**
+**JSON Generation (for Splunk/Elastic):**
 ```bash
 python3 -m soc_log_generator generate \
   --generator firewall \
-  --syslog-host <IP_SIEM> \
+  --syslog-host <SIEM_IP> \
   --syslog-port 514 \
   --syslog-format json \
   --eps 1000 \
   --duration 300
 ```
 
-**À vérifier:**
+**Verify:**
 ```
-□ App ID identifié: □ Oui □ Non
-□ Zones (src/dst): □ Oui □ Non
-□ Action (allow/deny): □ Oui □ Non
-□ Bytes/packets comptés: □ Oui □ Non
-□ Session ID tracking: □ Oui □ Non
-□ Catégorisation URL: □ Oui □ Non
+□ App ID identified: □ Yes □ No
+□ Zones (src/dst): □ Yes □ No
+□ Action (allow/deny): □ Yes □ No
+□ Bytes/packets counted: □ Yes □ No
+□ Session ID tracking: □ Yes □ No
+□ URL categorization: □ Yes □ No
 ```
 
 ---
 
 ### 2.4 AWS CloudTrail → SIEM
 
-**Options d'ingestion:**
+**Ingestion options:**
 
 **A. Via Syslog (direct):**
 ```bash
 python3 -m soc_log_generator generate \
   --generator aws \
-  --syslog-host <IP_SIEM> \
+  --syslog-host <SIEM_IP> \
   --syslog-port 514 \
   --syslog-format json \
   --eps 50 \
   --duration 600
 ```
 
-**B. Vers fichier (pour ingestion S3/simulation):**
+**B. To file (for S3 ingestion/simulation):**
 ```bash
-# Générer fichier pour ingestion S3
+# Generate file for S3 ingestion
 python3 -m soc_log_generator generate \
   --generator aws \
   --output-file /tmp/aws_cloudtrail_test.json \
   --eps 100 \
   --duration 300
 
-# Compresser comme CloudTrail réel
+# Compress like real CloudTrail
 gzip /tmp/aws_cloudtrail_test.json
-# Uploader vers bucket S3 de test
-aws s3 cp /tmp/aws_cloudtrail_test.json.gz s3://bucket-test/AWSLogs/123456789012/
+# Upload to test S3 bucket
+aws s3 cp /tmp/aws_cloudtrail_test.json.gz s3://test-bucket/AWSLogs/123456789012/
 ```
 
-**C. Multi-compte (simulation):**
+**C. Multi-account (simulation):**
 ```bash
-# Générer avec plusieurs clients parallèles
+# Generate with multiple parallel clients
 python3 -m soc_log_generator generate \
   --generator aws \
-  --syslog-host <IP_SIEM> \
+  --syslog-host <SIEM_IP> \
   --multi 5 \
   --eps 20 \
   --duration 300
 ```
 
-**À vérifier:**
+**Verify:**
 ```
-□ EventName parsé: □ Oui □ Non
-□ userIdentity reconnu: □ Oui □ Non
-□ awsRegion identifiée: □ Oui □ Non
-□ sourceIPAddress: □ Oui □ Non
-□ errorCode (si erreur): □ Oui □ Non
-□ requestParameters: □ Oui □ Non
-□ Dashboard AWS CloudTrail: □ Oui □ Non
+□ EventName parsed: □ Yes □ No
+□ userIdentity recognized: □ Yes □ No
+□ awsRegion identified: □ Yes □ No
+□ sourceIPAddress: □ Yes □ No
+□ errorCode (if error): □ Yes □ No
+□ requestParameters: □ Yes □ No
+□ AWS CloudTrail dashboard: □ Yes □ No
 ```
 
 ---
@@ -195,16 +196,16 @@ python3 -m soc_log_generator generate \
 ```bash
 python3 -m soc_log_generator generate \
   --generator azure \
-  --syslog-host <IP_SIEM> \
+  --syslog-host <SIEM_IP> \
   --syslog-port 514 \
   --syslog-format json \
   --eps 100 \
   --duration 300
 ```
 
-**Test spécifique Alertes:**
+**Specific Alert Test:**
 ```bash
-# Générer des alertes de sécurité
+# Generate security alerts
 python3 -m soc_log_generator generate \
   --generator azure \
   --mode burst \
@@ -213,14 +214,14 @@ python3 -m soc_log_generator generate \
   --duration 60
 ```
 
-**À vérifier:**
+**Verify:**
 ```
-□ Subscription ID: □ Oui □ Non
-□ Resource Group: □ Oui □ Non
-□ Operation Name: □ Oui □ Non
-□ Caller/User: □ Oui □ Non
-□ Activity Status: □ Oui □ Non
-□ Category (Administrative/Security): □ Oui □ Non
+□ Subscription ID: □ Yes □ No
+□ Resource Group: □ Yes □ No
+□ Operation Name: □ Yes □ No
+□ Caller/User: □ Yes □ No
+□ Activity Status: □ Yes □ No
+□ Category (Administrative/Security): □ Yes □ No
 ```
 
 ---
@@ -230,22 +231,22 @@ python3 -m soc_log_generator generate \
 ```bash
 python3 -m soc_log_generator generate \
   --generator azure-signin \
-  --syslog-host <IP_SIEM> \
+  --syslog-host <SIEM_IP> \
   --syslog-port 514 \
   --syslog-format json \
   --eps 50 \
   --duration 300
 ```
 
-**À vérifier:**
+**Verify:**
 ```
-□ UserPrincipalName: □ Oui □ Non
-□ AppDisplayName: □ Oui □ Non
-□ IP Address: □ Oui □ Non
-□ Location (geo): □ Oui □ Non
-□ Risk Level: □ Oui □ Non
-□ Conditional Access Status: □ Oui □ Non
-□ MFA Details: □ Oui □ Non
+□ UserPrincipalName: □ Yes □ No
+□ AppDisplayName: □ Yes □ No
+□ IP Address: □ Yes □ No
+□ Location (geo): □ Yes □ No
+□ Risk Level: □ Yes □ No
+□ Conditional Access Status: □ Yes □ No
+□ MFA Details: □ Yes □ No
 ```
 
 ---
@@ -255,21 +256,21 @@ python3 -m soc_log_generator generate \
 ```bash
 python3 -m soc_log_generator generate \
   --generator o365 \
-  --syslog-host <IP_SIEM> \
+  --syslog-host <SIEM_IP> \
   --syslog-port 514 \
   --syslog-format json \
   --eps 200 \
   --duration 300
 ```
 
-**À vérifier:**
+**Verify:**
 ```
-□ Workload (Exchange/SharePoint/Teams): □ Oui □ Non
-□ Operation: □ Oui □ Non
-□ UserId: □ Oui □ Non
-□ ClientIP: □ Oui □ Non
-□ Item/Subject (si email): □ Oui □ Non
-□ SiteUrl (si SharePoint): □ Oui □ Non
+□ Workload (Exchange/SharePoint/Teams): □ Yes □ No
+□ Operation: □ Yes □ No
+□ UserId: □ Yes □ No
+□ ClientIP: □ Yes □ No
+□ Item/Subject (if email): □ Yes □ No
+□ SiteUrl (if SharePoint): □ Yes □ No
 ```
 
 ---
@@ -279,62 +280,62 @@ python3 -m soc_log_generator generate \
 ```bash
 python3 -m soc_log_generator generate \
   --generator gcp \
-  --syslog-host <IP_SIEM> \
+  --syslog-host <SIEM_IP> \
   --syslog-port 514 \
   --syslog-format json \
   --eps 50 \
   --duration 300
 ```
 
-**À vérifier:**
+**Verify:**
 ```
-□ protoPayload.methodName: □ Oui □ Non
-□ protoPayload.authenticationInfo: □ Oui □ Non
-□ resource.labels.project_id: □ Oui □ Non
-□ severity: □ Oui □ Non
-□ logName: □ Oui □ Non
+□ protoPayload.methodName: □ Yes □ No
+□ protoPayload.authenticationInfo: □ Yes □ No
+□ resource.labels.project_id: □ Yes □ No
+□ severity: □ Yes □ No
+□ logName: □ Yes □ No
 ```
 
 ---
 
-## 3. Tests de Charge
+## 3. Load Tests
 
-### 3.1 Test de Volume Soutenu
+### 3.1 Sustained Volume Test
 
-**Objectif:** Vérifier que le SIEM tient la charge
+**Objective:** Verify SIEM handles sustained load
 
 ```bash
-# 1000 EPS pendant 1 heure
+# 1000 EPS for 1 hour
 python3 -m soc_log_generator generate \
   --generator firewall \
-  --syslog-host <IP_SIEM> \
+  --syslog-host <SIEM_IP> \
   --syslog-port 514 \
   --eps 1000 \
   --duration 3600
 ```
 
-**Métriques à mesurer:**
+**Metrics to measure:**
 ```
-Heure début: _______
-Heure fin: _______
-Events reçus (SIEM): _______
-Events générés: 3,600,000
-Taux de perte: _______%
-CPU SIEM (moyenne): _______%
-CPU SIEM (pic): _______%
-Mémoire SIEM: _______
-Latence ingestion (moyenne): _______ms
-Latence ingestion (p99): _______ms
+Start time: _______
+End time: _______
+Events received (SIEM): _______
+Events generated: 3,600,000
+Loss rate: _______%
+SIEM CPU (average): _______%
+SIEM CPU (peak): _______%
+SIEM Memory: _______
+Ingestion latency (average): _______ms
+Ingestion latency (p99): _______ms
 ```
 
 ---
 
-### 3.2 Test de Burst (Pic de charge)
+### 3.2 Burst Test (Load Spike)
 
-**Objectif:** Tester la réaction aux pics
+**Objective:** Test reaction to spikes
 
 ```bash
-# Ramp up vers 5000 EPS
+# Ramp up to 5000 EPS
 python3 -m soc_log_generator generate \
   --generator firewall \
   --mode ramp \
@@ -346,27 +347,27 @@ python3 -m soc_log_generator generate \
 
 **Observations:**
 ```
-□ File d'attente SIEM: □ Stable □ Augmente □ Déborde
+□ SIEM queue: □ Stable □ Increases □ Overflows
 □ Events dropped: _______
-□ Latence durant burst: _______
+□ Latency during burst: _______
 □ Recovery time: _______
 ```
 
 ---
 
-## 4. Validation des Alertes
+## 4. Alert Validation
 
-### 4.1 Test de Corrélation
+### 4.1 Correlation Test
 
-**Scénario Brute Force:**
+**Brute Force Scenario:**
 ```bash
-# Terminal 1 - Générer connexions SSH normales
+# Terminal 1 - Generate normal SSH connections
 python3 -m soc_log_generator generate \
   --generator linux \
   --eps 5 \
   --duration 300
 
-# Terminal 2 - Après 2 min, ajouter brute force
+# Terminal 2 - After 2 min, add brute force
 python3 -m soc_log_generator generate \
   --generator linux \
   --mode burst \
@@ -378,24 +379,24 @@ python3 -m soc_log_generator generate \
 
 **Validation:**
 ```
-□ Alerte "Multiple Failed Logins" déclenchée: □ Oui □ Non
-□ Temps de détection: _______ secondes
-□ Faux positifs: _______
-□ Vrais positifs: _______
+□ "Multiple Failed Logins" alert triggered: □ Yes □ No
+□ Detection time: _______ seconds
+□ False positives: _______
+□ True positives: _______
 ```
 
 ---
 
-### 4.2 Test de Détection Anomalie
+### 4.2 Anomaly Detection Test
 
 ```bash
-# Générer trafic normal
+# Generate normal traffic
 python3 -m soc_log_generator generate \
   --generator firewall \
   --eps 100 \
   --duration 300
 
-# Générer exfiltration de données (burst sortant)
+# Generate data exfiltration (outbound burst)
 python3 -m soc_log_generator generate \
   --generator firewall \
   --mode burst \
@@ -406,28 +407,28 @@ python3 -m soc_log_generator generate \
 
 **Validation:**
 ```
-□ Détection volume anormal: □ Oui □ Non
-□ Détection nouvelle destination: □ Oui □ Non
-□ Alerte Data Exfiltration: □ Oui □ Non
+□ Abnormal volume detection: □ Yes □ No
+□ New destination detection: □ Yes □ No
+□ Data Exfiltration alert: □ Yes □ No
 ```
 
 ---
 
-## 5. Format CEF/LEEF
+## 5. CEF/LEEF Format
 
-### 5.1 Test CEF (ArcSight/QRadar)
+### 5.1 CEF Test (ArcSight/QRadar)
 
 ```bash
-# Générer format CEF
+# Generate CEF format
 python3 -m soc_log_generator generate \
   --generator firewall \
-  --syslog-host <IP_SIEM> \
+  --syslog-host <SIEM_IP> \
   --syslog-port 514 \
   --syslog-format cef \
   --eps 100 \
   --duration 60
 
-# Ou vers fichier pour inspection
+# Or to file for inspection
 python3 -m soc_log_generator generate \
   --generator firewall \
   --output-file /tmp/cef_test.log \
@@ -437,22 +438,22 @@ python3 -m soc_log_generator generate \
 tail -5 /tmp/cef_test.log
 ```
 
-**Validation CEF:**
+**CEF Validation:**
 ```
-□ Header CEF correct: □ Oui □ Non
-□ Device Vendor/Product: □ Oui □ Non
-□ Severity mapping: □ Oui □ Non
-□ Extensions parsées: □ Oui □ Non (lesquelles: _______)
+□ CEF header correct: □ Yes □ No
+□ Device Vendor/Product: □ Yes □ No
+□ Severity mapping: □ Yes □ No
+□ Extensions parsed: □ Yes □ No (which: _______)
 ```
 
 ---
 
-## 6. Résultats Globaux
+## 6. Global Results
 
-### 6.1 Synthèse
+### 6.1 Summary
 
-| Source | Events | Reçus | % Reçu | Parsing | Alertes | Status |
-|--------|--------|-------|--------|---------|---------|--------|
+| Source | Events | Received | % Received | Parsing | Alerts | Status |
+|--------|--------|----------|------------|---------|--------|--------|
 | Windows | | | | | | □ OK □ KO |
 | Linux | | | | | | □ OK □ KO |
 | Firewall | | | | | | □ OK □ KO |
@@ -461,7 +462,7 @@ tail -5 /tmp/cef_test.log
 | O365 | | | | | | □ OK □ KO |
 | GCP | | | | | | □ OK □ KO |
 
-### 6.2 Problèmes Identifiés
+### 6.2 Issues Identified
 
 ```
 1. ___________________________________________________________
@@ -471,7 +472,7 @@ tail -5 /tmp/cef_test.log
 3. ___________________________________________________________
 ```
 
-### 6.3 Corrections Apportées
+### 6.3 Corrections Applied
 
 ```
 1. ___________________________________________________________
@@ -481,14 +482,14 @@ tail -5 /tmp/cef_test.log
 3. ___________________________________________________________
 ```
 
-### 6.4 Validation Finale
+### 6.4 Final Validation
 
 ```
-□ Tous les parsers fonctionnent: □ Oui □ Non
-□ Pas de perte d'events < 1%: □ Oui □ Non
-□ Alertes déclenchées correctement: □ Oui □ Non
-□ Dashboards populates: □ Oui □ Non
-□ Ready for production: □ Oui □ Non
+□ All parsers working: □ Yes □ No
+□ Event loss < 1%: □ Yes □ No
+□ Alerts triggered correctly: □ Yes □ No
+□ Dashboards populate: □ Yes □ No
+□ Ready for production: □ Yes □ No
 ```
 
 ---
@@ -496,50 +497,50 @@ tail -5 /tmp/cef_test.log
 ## 7. Signatures
 
 ```
-Testeur SIEM: _______________ Date: _______ Signature: _______
-Testeur LogGen: _______________ Date: _______ Signature: _______
-Responsable: _______________ Date: _______ Signature: _______
+SIEM Tester: _______________ Date: _______ Signature: _______
+LogGen Tester: _______________ Date: _______ Signature: _______
+Manager: _______________ Date: _______ Signature: _______
 ```
 
 ---
 
-## Annexes
+## Appendices
 
-### A. Commandes Rapides
+### A. Quick Commands
 
 ```bash
-# Test rapide 100 events
+# Quick 100 events test
 python3 -m soc_log_generator generate --generator <TYPE> --eps 100 --duration 10
 
-# Test vers fichier
+# Test to file
 python3 -m soc_log_generator generate --generator <TYPE> --output-file test.log --duration 60
 
-# Test multi-générateurs
+# Multi-generators test
 python3 -m soc_log_generator generate --generator windows --eps 50 &
 python3 -m soc_log_generator generate --generator linux --eps 50 &
 wait
 ```
 
-### B. Options CLI Complètes
+### B. Complete CLI Options
 
 ```
 --generator {windows,linux,nxlog,firewall,proxy,dns,ids,aws,azure,o365,gcp}
---syslog-host HOST          IP ou hostname du SIEM
---syslog-port PORT          Port (défaut: 514)
---syslog-protocol {tcp,udp} Protocole
---syslog-format {syslog,json,cef} Format de sortie
---eps FLOAT                 Events par seconde
---duration INT              Durée en secondes (0 = infini)
---mode {constant,ramp,burst} Mode de génération
---multi INT                 Nombre de clients parallèles
---output-file PATH          Fichier de sortie (optionnel)
+--syslog-host HOST          IP or hostname of SIEM
+--syslog-port PORT          Port (default: 514)
+--syslog-protocol {tcp,udp} Protocol
+--syslog-format {syslog,json,cef} Output format
+--eps FLOAT                 Events per second
+--duration INT              Duration in seconds (0 = infinite)
+--mode {constant,ramp,burst} Generation mode
+--multi INT                 Number of parallel clients
+--output-file PATH          Output file (optional)
 ```
 
-### C. Contact Support
+### C. Support
 
 ```
-En cas de problème:
-- Logs du générateur: /tmp/soc_log_generator.log
-- Vérifier connectivité: telnet <IP_SIEM> <PORT>
-- Vérifier firewall: nc -zv <IP_SIEM> <PORT>
+In case of issues:
+- Generator logs: /tmp/soc_log_generator.log
+- Check connectivity: telnet <SIEM_IP> <PORT>
+- Check firewall: nc -zv <SIEM_IP> <PORT>
 ```

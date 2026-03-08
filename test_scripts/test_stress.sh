@@ -1,21 +1,21 @@
 #!/bin/bash
-# Test de charge complet sur SIEM
-# Usage: ./test_stress.sh <IP_SIEM> [PORT]
+# Complete SIEM Load Test
+# Usage: ./test_stress.sh <SIEM_IP> [PORT]
 
 SIEM_IP=${1:-}
 PORT=${2:-514}
 
 if [ -z "$SIEM_IP" ]; then
-    echo "Usage: $0 <IP_SIEM> [PORT]"
+    echo "Usage: $0 <SIEM_IP> [PORT]"
     exit 1
 fi
 
-echo "=== TEST DE CHARGE SIEM ==="
+echo "=== SIEM LOAD TEST ==="
 echo "SIEM: $SIEM_IP:$PORT"
 echo ""
-echo "ATTENTION: Ce test génère beaucoup de trafic!"
-read -p "Continuer? (oui/non): " CONFIRM
-if [ "$CONFIRM" != "oui" ]; then
+echo "WARNING: This test generates heavy traffic!"
+read -p "Continue? (yes/no): " CONFIRM
+if [ "$CONFIRM" != "yes" ]; then
     exit 0
 fi
 
@@ -23,7 +23,7 @@ LOG_DIR="stress_test_$(date +%Y%m%d_%H%M%S)"
 mkdir -p $LOG_DIR
 
 echo ""
-echo "[TEST 1] Ramp up progressif..."
+echo "[TEST 1] Progressive ramp up..."
 python3 -m soc_log_generator generate \
     --generator firewall \
     --mode ramp \
@@ -35,7 +35,7 @@ python3 -m soc_log_generator generate \
     --syslog-port $PORT 2>&1 | tee $LOG_DIR/ramp_test.log
 
 echo ""
-echo "[TEST 2] Burst traffic (simulation DDoS)..."
+echo "[TEST 2] Burst traffic (DDoS simulation)..."
 python3 -m soc_log_generator generate \
     --generator firewall \
     --mode burst \
@@ -47,25 +47,25 @@ python3 -m soc_log_generator generate \
     --syslog-port $PORT 2>&1 | tee $LOG_DIR/burst_test.log
 
 echo ""
-echo "[TEST 3] Multi-source (tous les générateurs)..."
+echo "[TEST 3] Multi-source (all generators)..."
 
-# Lancer tous les générateurs en parallèle
+# Launch all generators in parallel
 python3 -m soc_log_generator generate --generator windows --eps 50 --duration 60 --syslog-host $SIEM_IP --syslog-port $PORT > $LOG_DIR/windows.log 2>&1 &
 python3 -m soc_log_generator generate --generator linux --eps 50 --duration 60 --syslog-host $SIEM_IP --syslog-port $PORT > $LOG_DIR/linux.log 2>&1 &
 python3 -m soc_log_generator generate --generator firewall --eps 1000 --duration 60 --syslog-host $SIEM_IP --syslog-port $PORT > $LOG_DIR/firewall.log 2>&1 &
 python3 -m soc_log_generator generate --generator aws --eps 100 --duration 60 --syslog-host $SIEM_IP --syslog-port $PORT > $LOG_DIR/aws.log 2>&1 &
 python3 -m soc_log_generator generate --generator azure --eps 100 --duration 60 --syslog-host $SIEM_IP --syslog-port $PORT > $LOG_DIR/azure.log 2>&1 &
 
-echo "  -> Tous les générateurs lancés (60 secondes)..."
+echo "  -> All generators launched (60 seconds)..."
 wait
-echo "  -> Terminé"
+echo "  -> Completed"
 
 echo ""
-echo "=== TEST DE CHARGE COMPLETÉ ==="
-echo "Logs sauvegardés dans: $LOG_DIR/"
+echo "=== LOAD TEST COMPLETED ==="
+echo "Logs saved in: $LOG_DIR/"
 echo ""
-echo "Vérifiez dans le SIEM:"
-echo "- Aucune perte d'events"
-echo "- Latence d'ingestion acceptable"
-echo "- Pas de buffering/fille d'attente"
-echo "- CPU/Mémoire stables"
+echo "Verify in SIEM:"
+echo "- No event loss"
+echo "- Acceptable ingestion latency"
+echo "- No buffering/queue issues"
+echo "- Stable CPU/Memory"

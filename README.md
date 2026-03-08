@@ -4,282 +4,158 @@
 > 📊 **[Project Status](STATUS.md)** - Current progress and roadmap  
 > 📋 **[Technical Specs](SPECS.md)** - Architecture and design details
 
-Generateur professionnel de logs pour SOC (Security Operations Center) et MSSP (Managed Security Service Provider).
+Professional log generator for SOC (Security Operations Center) and MSSP (Managed Security Service Provider).
 
-## Objectif
+## Objective
 
-Simuler un environnement d'entreprise complet avec des logs realistes provenant de multiples sources de securite, incluant des scenarios d'attaque pour tester les SIEM et les regles de detection.
+Simulate a complete enterprise environment with realistic security logs from multiple sources, including attack scenarios for testing SIEMs and detection rules.
 
 ## Architecture
 
 ```
 soc-log-generator/
-├── core.py                          # Moteur principal
-├── main.py                          # Point d'entree
+├── core.py                          # Core engine
+├── main.py                          # Entry point
 ├── config/
-│   └── default.yaml                 # Configuration par defaut
+│   └── default.yaml                 # Default configuration
 ├── generators/
 │   ├── endpoint/
-│   │   ├── windows_generator.py     # Windows Event Logs + Sysmon
+│   │   ├── windows.py               # Windows Event Logs + Sysmon
 │   │   └── linux_generator.py       # Auth, Syslog, Auditd
 │   ├── network/
-│   │   ├── firewall_generator.py    # PaloAlto, Fortinet, Cisco
-│   │   ├── proxy_generator.py       # Proxy Web
-│   │   └── dns_generator.py         # DNS logs
+│   │   ├── firewall.py              # PaloAlto, Fortinet, Cisco
+│   │   ├── proxy.py                 # Web Proxy
+│   │   └── dns.py                   # DNS logs
 │   ├── cloud/
-│   │   ├── aws_generator.py         # CloudTrail
-│   │   ├── azure_generator.py       # Azure Sentinel
-│   │   └── o365_generator.py        # Office 365
-│   └── security/
-│       ├── crowdstrike_generator.py # EDR CrowdStrike
-│       └── defender_generator.py    # MS Defender
-├── scenarios/
-│   ├── brute_force.py
-│   ├── lateral_movement.py
-│   └── data_exfiltration.py
-└── outputs/
-    ├── syslog_output.py
-    ├── file_output.py
-    └── kafka_output.py
+│   │   ├── aws_cloudtrail.py        # CloudTrail
+│   │   ├── azure_activity.py        # Azure Activity Logs
+│   │   └── o365.py                  # Office 365
+├── validation/                       # Quality control
+├── siem_tests/                       # SIEM compatibility tests
+└── stress_tests/                     # Performance testing
 ```
 
-## Sources Supportees
+## Quick Start
 
-### Endpoint
-| Source | Formats | Evenements |
-|--------|---------|------------|
-| **Windows Security** | XML, JSON, CEF | 4624/4625 (Logon), 4688 (Process), 4728 (Group), 49+ events |
-| **Linux Auth** | Syslog | SSH auth, sudo commands, cron jobs, systemd |
-| **Linux Auditd** | Syslog | Syscalls (execve, connect, open), file integrity |
-| **Linux Sysmon** | JSON | Process Create (1), Network Connect (3), File Create (11), Raw Access (9) |
-
-### Network
-| Source | Vendors | Types |
-|--------|---------|-------|
-| **Firewall** | PaloAlto NGFW, Fortinet FortiGate, Cisco ASA | TRAFFIC, THREAT (22KB) |
-| **Proxy** | Blue Coat ProxySG, Zscaler, Squid | Web access, blocked, DLP |
-| **DNS** | Infoblox NIOS, BIND, CoreDNS | Queries, DNS tunneling detection |
-| **IDS/IPS** | Suricata, Snort | EVE JSON, Snort alerts |
-
-### Cloud
-| Source | Services |
-|--------|----------|
-| **AWS** | CloudTrail, VPC Flow, GuardDuty |
-| **Azure** | Sentinel, Activity Logs, Sign-ins |
-| **Office 365** | Exchange, SharePoint, Azure AD |
-
-### Security Tools
-| Source | Types |
-|--------|-------|
-| **EDR** | CrowdStrike, MS Defender, Carbon Black |
-| **NIDS** | Suricata, Snort |
-| **Vulnerability** | Qualys, Nessus, Rapid7 |
-
-## Utilisation
-
-### Demarrage rapide
+### Installation
 
 ```bash
-# Mode fichier local
-python3 main.py -o /var/log/soc/logs.json
-
-# Envoi vers rsyslog/SIEM
-python3 main.py -t 10.0.0.1 -p 514 --protocol tcp
-
-# Configuration personnalisee
-python3 main.py -c config/production.yaml
+git clone https://github.com/DeDobbeleer/soc-log-generator.git
+cd soc-log-generator
+pip install -r requirements.txt
 ```
 
-### Arguments
+### Generate Logs
 
-| Argument | Description | Defaut |
-|----------|-------------|--------|
-| `-c, --config` | Fichier YAML de configuration | `config/default.yaml` |
-| `-t, --target` | Destination syslog | - |
-| `-p, --port` | Port syslog | 514 |
-| `--protocol` | tcp/udp | tcp |
-| `-o, --output` | Fichier de sortie | - |
-| `--eps` | Events per second global | 100 |
-| `--duration` | Duree en secondes | 0 (infini) |
+```bash
+# Windows Events to file
+python3 -m soc_log_generator generate --generator windows --output-file events.json --duration 60
 
-### Configuration YAML
+# AWS CloudTrail to syslog
+python3 -m soc_log_generator generate --generator aws --syslog-host 192.168.1.100 --eps 100
 
-```yaml
-generators:
-  windows:
-    enabled: true
-    eps: 150
-    weight: 1.0
-    channels: [Security, Sysmon, System]
+# Firewall logs with burst mode
+python3 -m soc_log_generator generate --generator firewall --mode burst --start-eps 100 --eps 5000
+```
+
+### Available Generators
+
+| Source | Generator | CLI |
+|--------|-----------|-----|
+| Windows | Windows Event Logs | `--generator windows` |
+| Linux | Auth/Syslog | `--generator linux` |
+| Firewall | Palo Alto/Fortinet/Cisco | `--generator firewall` |
+| Proxy | BlueCoat/Zscaler/Squid | `--generator proxy` |
+| DNS | Infoblox/BIND | `--generator dns` |
+| IDS/IPS | Suricata/Snort | `--generator ids` |
+| AWS | CloudTrail | `--generator aws` |
+| Azure | Activity Logs | `--generator azure` |
+| Azure AD | Sign-in Logs | `--generator azure-signin` |
+| Office 365 | Audit Logs | `--generator o365` |
+| GCP | Audit Logs | `--generator gcp` |
+
+## CLI Options
+
+```
+--generator {windows,linux,firewall,proxy,dns,ids,aws,azure,o365,gcp}
+  Log generator to use
   
-  linux:
-    enabled: true
-    eps: 80
-    weight: 0.8
+--syslog-host HOST
+  SIEM server IP or hostname
   
-  firewall:
-    enabled: true
-    vendor: paloalto
-    eps: 300
-    weight: 1.5
-
-outputs:
-  - type: file
-    path: /var/log/soc/logs.json
+--syslog-port PORT (default: 514)
+  Syslog server port
   
-  - type: syslog
-    host: 10.0.0.1
-    port: 514
-    protocol: tcp
+--syslog-protocol {tcp,udp}
+  Transport protocol
+  
+--syslog-format {syslog,json,cef}
+  Output format (syslog=RFC5424, json=ECS, cef=ArcSight)
+  
+--eps FLOAT (default: 100)
+  Events per second target
+  
+--duration SECONDS (default: 0=unlimited)
+  Generation duration
+  
+--mode {constant,ramp,burst}
+  Generation mode:
+    - constant: Fixed EPS
+    - ramp: Gradual increase
+    - burst: Traffic spikes
+  
+--multi N (default: 1)
+  Number of parallel clients
+  
+--output-file PATH
+  Output file (if not using syslog)
 ```
 
-## Scenarios d'Attaque
+## Testing on SIEM
 
-Le generateur peut injecter des scenarios d'attaque realistes:
+### Test Scripts
 
-### 1. Brute Force SSH
-```yaml
-scenarios:
-  brute_force_ssh:
-    enabled: true
-    duration: 300
-    attempts: 50
-    target: 10.0.10.15
-```
-
-Evenements generees:
-- Multiple `Failed password` dans auth.log
-- `Connection closed` apres echecs
-- Eventuellement `Accepted password` si succes
-
-### 2. Lateral Movement
-```yaml
-scenarios:
-  lateral_movement:
-    enabled: true
-    techniques: [psexec, wmi_exec, scheduled_task]
-```
-
-Evenements:
-- Windows Event 4624 (logon type 3)
-- Windows Event 4688 (psexec.exe)
-- Sysmon Event 1 (creation process)
-- Firewall logs entre segments
-
-### 3. Data Exfiltration via DNS
-```yaml
-scenarios:
-  dns_tunneling:
-    enabled: true
-    volume: "10MB"
-    domain: "evil.com"
-```
-
-Evenements:
-- Requetes DNS avec gros payload
-- Sous-domaines encodes base64
-- Volume anormal de requetes
-
-### 4. Ransomware Behavior
-- Creation de fichiers `.encrypted`
-- Modification massive de fichiers
-- Suppression des shadows copies
-- Communication C2
-
-## Formats de Sortie
-
-### JSON (ECS)
-```json
-{
-  "@timestamp": "2024-01-15T10:30:45.123Z",
-  "source_type": "windows",
-  "source_ip": "10.0.10.15",
-  "source_host": "WK-WIN-015",
-  "message": "An account was successfully logged on",
-  "severity": "LOW",
-  "fields": {
-    "EventID": 4624,
-    "Channel": "Security",
-    "TargetUserName": "jdoe",
-    "LogonType": 3
-  },
-  "tags": ["windows", "security", "logon"]
-}
-```
-
-### CEF
-```
-CEF:0|Microsoft|Windows|1.0|4624|Logon|1|src=10.0.10.15 dst=10.0.30.1 suser=jdoe duser=admin outcome=success
-```
-
-### Syslog RFC 5424
-```
-<86>1 2024-01-15T10:30:45.123Z WK-WIN-015 Security - - - An account was successfully logged on
-```
-
-## Patterns Temporels Realistes
-
-Le generateur simule des patterns d'activite realistes:
-
-- **Heures de bureau**: 2x plus de logs (9h-12h, 14h-18h)
-- **Pause dejeuner**: -30% de logs (12h-14h)
-- **Nuit**: -80% de logs (23h-6h)
-- **Week-end**: -60% de logs
-- **Variations aleatoires**: +/- 10%
-
-## Performance
-
-| EPS | CPU | Memoire | Disque (JSON) |
-|-----|-----|---------|---------------|
-| 100 | 5%  | 50 MB   | 15 MB/heure   |
-| 1000| 20% | 200 MB  | 150 MB/heure  |
-| 5000| 60% | 800 MB  | 750 MB/heure  |
-| 10000| 100%| 1.5 GB | 1.5 GB/heure  |
-
-*Tests sur Intel i7, SSD NVMe*
-
-## Integration SIEM
-
-### Splunk
 ```bash
-# Forwarder vers Splunk
-python3 main.py -t splunk-indexer -p 9997 --protocol tcp
+# Test Windows Events on SIEM
+./test_scripts/test_windows.sh 192.168.1.100 514
 
-# Ou fichier + monitor
-python3 main.py -o /opt/splunk/logs/soc-generator.json
+# Test AWS CloudTrail
+./test_scripts/test_aws.sh 192.168.1.100 514
+
+# Stress test
+./test_scripts/test_stress.sh 192.168.1.100 514
 ```
 
-### ELK Stack
-```bash
-# Directement vers Logstash
-python3 main.py -t logstash -p 5044
+### Test Procedure
 
-# Ou fichier + Filebeat
-python3 main.py -o /var/log/soc-generator/
-```
+Fill in the [TEST_PROCEDURE.md](TEST_PROCEDURE.md) logbook with:
+- Events received
+- Parsing validation
+- Alert triggering
+- Performance metrics
 
-### QRadar
-```bash
-# Format CEF pour QRadar
-python3 main.py -t qradar -p 514 --format cef
-```
+## Project Status
 
-### Sentinel / Log Analytics
-```bash
-# Format JSON vers Azure
-python3 main.py --format json | az monitor log-analytics create ...
-```
+**Current Phase:** Testing Framework Ready
 
-## Roadmap
+- ✅ 12 log generators (Phases 1-3 complete)
+- ✅ Quality control system (validation, schemas)
+- ✅ Testing framework (SIEM compatibility, stress tests)
+- ⏸️ Awaiting live SIEM validation
+- ⏸️ Phase 4: Security scenarios (pending)
 
-- [ ] Generateurs Cloud (AWS, Azure, GCP)
-- [ ] Generateurs EDR (CrowdStrike, Defender)
-- [ ] Plus de scenarios d'attaque (APT, insider threat)
-- [ ] Support Kafka / Kinesis
-- [ ] Interface Web de controle
-- [ ] Metriques Prometheus
-- [ ] Tests de detection automatises
+See [STATUS.md](STATUS.md) for complete details.
 
-## Licence
+## Documentation
 
-MIT License - Usage libre pour SOC, MSSP, tests de SIEM
+| Document | Description |
+|----------|-------------|
+| [INDEX.md](INDEX.md) | Documentation index |
+| [STATUS.md](STATUS.md) | Project status and roadmap |
+| [SPECS.md](SPECS.md) | Technical specifications |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Contribution guide |
+| [TEST_PROCEDURE.md](TEST_PROCEDURE.md) | SIEM testing procedures |
+
+## License
+
+MIT License - See LICENSE file

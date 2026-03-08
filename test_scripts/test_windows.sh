@@ -1,22 +1,22 @@
 #!/bin/bash
-# Test Windows Events sur SIEM
-# Usage: ./test_windows.sh <IP_SIEM> [PORT]
+# Windows Events Test on SIEM
+# Usage: ./test_windows.sh <SIEM_IP> [PORT]
 
 SIEM_IP=${1:-}
 PORT=${2:-514}
 
 if [ -z "$SIEM_IP" ]; then
-    echo "Usage: $0 <IP_SIEM> [PORT]"
-    echo "Exemple: $0 192.168.1.100 514"
+    echo "Usage: $0 <SIEM_IP> [PORT]"
+    echo "Example: $0 192.168.1.100 514"
     exit 1
 fi
 
-echo "=== TEST WINDOWS EVENTS ==="
+echo "=== WINDOWS EVENTS TEST ==="
 echo "SIEM: $SIEM_IP:$PORT"
 echo ""
 
-# Test 1: Basique
-echo "[TEST 1] Envoi 100 events/sec pendant 30s..."
+# Test 1: Basic
+echo "[TEST 1] Sending 100 events/sec for 30s..."
 python3 -m soc_log_generator generate \
     --generator windows \
     --syslog-host $SIEM_IP \
@@ -26,7 +26,7 @@ python3 -m soc_log_generator generate \
     --duration 30
 
 echo ""
-echo "[TEST 2] Format JSON..."
+echo "[TEST 2] JSON format..."
 python3 -m soc_log_generator generate \
     --generator windows \
     --syslog-host $SIEM_IP \
@@ -36,7 +36,7 @@ python3 -m soc_log_generator generate \
     --duration 20
 
 echo ""
-echo "[TEST 3] Pic de charge (burst)..."
+echo "[TEST 3] Load spike (burst)..."
 python3 -m soc_log_generator generate \
     --generator windows \
     --mode burst \
@@ -48,9 +48,9 @@ python3 -m soc_log_generator generate \
     --syslog-port $PORT
 
 echo ""
-echo "=== TEST WINDOWS COMPLETÉ ==="
-echo "Vérifiez dans le SIEM:"
-echo "- Events reçus (environ 6,500)"
+echo "=== WINDOWS TEST COMPLETED ==="
+echo "Verify in SIEM:"
+echo "- Events received (approx 6,500)"
 echo "- Channel (Security/System/Application)"
-echo "- EventID reconnu"
+echo "- EventID recognized"
 echo "- Severity mapping"

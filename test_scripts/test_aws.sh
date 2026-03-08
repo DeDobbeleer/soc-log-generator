@@ -1,22 +1,22 @@
 #!/bin/bash
-# Test AWS CloudTrail sur SIEM
-# Usage: ./test_aws.sh <IP_SIEM> [PORT]
+# AWS CloudTrail Test on SIEM
+# Usage: ./test_aws.sh <SIEM_IP> [PORT]
 
 SIEM_IP=${1:-}
 PORT=${2:-514}
 
 if [ -z "$SIEM_IP" ]; then
-    echo "Usage: $0 <IP_SIEM> [PORT]"
-    echo "Exemple: $0 192.168.1.100 514"
+    echo "Usage: $0 <SIEM_IP> [PORT]"
+    echo "Example: $0 192.168.1.100 514"
     exit 1
 fi
 
-echo "=== TEST AWS CLOUDTRAIL ==="
+echo "=== AWS CLOUDTRAIL TEST ==="
 echo "SIEM: $SIEM_IP:$PORT"
 echo ""
 
-# Test 1: Format JSON (recommandé pour Splunk/Elastic)
-echo "[TEST 1] Format JSON - 50 EPS pendant 60s..."
+# Test 1: JSON format (recommended for Splunk/Elastic)
+echo "[TEST 1] JSON format - 50 EPS for 60s..."
 python3 -m soc_log_generator generate \
     --generator aws \
     --syslog-host $SIEM_IP \
@@ -27,7 +27,7 @@ python3 -m soc_log_generator generate \
     --duration 60
 
 echo ""
-echo "[TEST 2] Multi-compte (5 clients parallèles)..."
+echo "[TEST 2] Multi-account (5 parallel clients)..."
 python3 -m soc_log_generator generate \
     --generator aws \
     --syslog-host $SIEM_IP \
@@ -37,7 +37,7 @@ python3 -m soc_log_generator generate \
     --duration 30
 
 echo ""
-echo "[TEST 3] Scénario admin (création/suppression ressources)..."
+echo "[TEST 3] Admin scenario (resource creation/deletion)..."
 python3 -m soc_log_generator generate \
     --generator aws \
     --eps 100 \
@@ -46,16 +46,16 @@ python3 -m soc_log_generator generate \
     --syslog-port $PORT &
 PID=$!
 sleep 20
-echo "  -> Vérifier détection changements IAM..."
+echo "  -> Check IAM change detection..."
 sleep 20
-echo "  -> Vérifier détection création EC2..."
+echo "  -> Check EC2 creation detection..."
 wait $PID
 
 echo ""
-echo "=== TEST AWS COMPLETÉ ==="
-echo "Vérifiez dans le SIEM:"
-echo "- eventSource parsé (*.amazonaws.com)"
+echo "=== AWS TEST COMPLETED ==="
+echo "Verify in SIEM:"
+echo "- eventSource parsed (*.amazonaws.com)"
 echo "- eventName (RunInstances, CreateUser, etc.)"
 echo "- userIdentity.type (IAMUser, AssumedRole)"
 echo "- awsRegion"
-echo "- errorCode (si présent)"
+echo "- errorCode (if present)"

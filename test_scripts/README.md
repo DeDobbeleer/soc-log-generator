@@ -1,100 +1,100 @@
-# Scripts de Test SIEM
+# SIEM Test Scripts
 
-## Prérequis
+## Prerequisites
 
 ```bash
-# Rendre les scripts exécutables
+# Make scripts executable
 chmod +x test_*.sh
 
-# Vérifier que le générateur est installé
+# Verify generator is installed
 python3 -m soc_log_generator --version
 ```
 
-## Utilisation
+## Usage
 
-### Test Windows Events
+### Windows Events Test
 ```bash
-./test_windows.sh <IP_SIEM> [PORT]
-# Exemple:
+./test_windows.sh <SIEM_IP> [PORT]
+# Example:
 ./test_windows.sh 192.168.1.100 514
 ```
 
-### Test AWS CloudTrail
+### AWS CloudTrail Test
 ```bash
-./test_aws.sh <IP_SIEM> [PORT]
-# Exemple:
+./test_aws.sh <SIEM_IP> [PORT]
+# Example:
 ./test_aws.sh 192.168.1.100 514
 ```
 
-### Test Firewall (Charge)
+### Firewall Test (High Load)
 ```bash
-./test_firewall.sh <IP_SIEM> [PORT]
-# Exemple:
+./test_firewall.sh <SIEM_IP> [PORT]
+# Example:
 ./test_firewall.sh 192.168.1.100 514
 ```
 
-### Test de Stress Complet
+### Complete Stress Test
 ```bash
-./test_stress.sh <IP_SIEM> [PORT]
-# Exemple:
+./test_stress.sh <SIEM_IP> [PORT]
+# Example:
 ./test_stress.sh 192.168.1.100 514
 ```
 
-## Vérification Post-Test
+## Post-Test Verification
 
-Après chaque test, vérifier dans le SIEM:
+After each test, verify in SIEM:
 
-1. **Volume**: Nombre d'events reçus correspond à la génération
-2. **Parsing**: Champs extraits correctement
-3. **Timestamp**: Heure correcte (vérifier timezone)
-4. **Source**: IP source identifiée
-5. **Alertes**: Corrélations fonctionnent
+1. **Volume**: Number of received events matches generation
+2. **Parsing**: Fields extracted correctly
+3. **Timestamp**: Correct time (check timezone)
+4. **Source**: Source IP identified
+5. **Alerts**: Correlations working
 
-## Commandes Manuelles
+## Manual Commands
 
 ```bash
-# Test rapide 100 events
+# Quick 100 events test
 python3 -m soc_log_generator generate --generator windows --eps 100 --duration 10 --syslog-host <IP>
 
-# Test vers fichier
+# Test to file
 python3 -m soc_log_generator generate --generator aws --output-file test.json --duration 60
 
-# Test multi-sources
+# Multi-source test
 python3 -m soc_log_generator generate --generator firewall --multi 5 --eps 1000 --syslog-host <IP>
 ```
 
-## Dépannage
+## Troubleshooting
 
-### Test de connectivité
+### Connectivity Test
 ```bash
-# Vérifier port ouvert
-telnet <IP_SIEM> 514
+# Check open port
+telnet <SIEM_IP> 514
 
-# Test UDP
-nc -vu <IP_SIEM> 514
+# UDP test
+nc -vu <SIEM_IP> 514
 
-# Test TCP
-nc -v <IP_SIEM> 514
+# TCP test
+nc -v <SIEM_IP> 514
 ```
 
-### Vérifier génération
+### Verify Generation
 ```bash
-# Générer vers stdout (sans envoyer au SIEM)
+# Generate to stdout (without sending to SIEM)
 python3 -m soc_log_generator generate --generator windows --eps 10 --duration 5
 
-# Compter events générés
+# Count generated events
 python3 -m soc_log_generator generate --generator windows --output-file test.log --duration 60
 wc -l test.log
 ```
 
-## Cahier de Test
+## Test Logbook
 
-Remplir le fichier `../TEST_PROCEDURE.md` avec les résultats de chaque test.
+Fill in the `../TEST_PROCEDURE.md` file with results from each test.
 
 ## Support
 
-En cas de problème:
-1. Vérifier logs: `test_*.log`
-2. Vérifier connectivité réseau
-3. Vérifier configuration SIEM (port, protocole)
-4. Consulter `../TEST_PROCEDURE.md` section dépannage
+In case of issues:
+1. Check logs: `test_*.log`
+2. Check network connectivity
+3. Check SIEM configuration (port, protocol)
+4. See `../TEST_PROCEDURE.md` troubleshooting section
