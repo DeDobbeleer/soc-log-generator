@@ -221,6 +221,50 @@ print(f"Validity Rate: {stats['validity_rate']}%")
 
 ---
 
+### Testing Framework ✅ READY FOR VALIDATION
+**Timeline:** 2024-03-08  
+**Status:** Framework créé, en attente de tests sur SIEM réels
+
+Framework complet pour valider l'ingestion sur SIEM.
+
+| Composant | Description | Location |
+|-----------|-------------|----------|
+| **Test Procedure** | Cahier de test à remplir manuellement | `TEST_PROCEDURE.md` |
+| **Test Scripts** | Scripts prêts à l'emploi | `test_scripts/*.sh` |
+| **Validation** | Tests de validation automatiques | `validation/` |
+| **SIEM Tests** | Tests de normalisation CEF/JSON | `siem_tests/` |
+| **Stress Tests** | Tests de charge | `stress_tests/` |
+
+**Scripts de Test:**
+```bash
+# Windows Events
+./test_scripts/test_windows.sh <IP_SIEM> 514
+
+# AWS CloudTrail
+./test_scripts/test_aws.sh <IP_SIEM> 514
+
+# Firewall (haute charge)
+./test_scripts/test_firewall.sh <IP_SIEM> 514
+
+# Test de stress complet
+./test_scripts/test_stress.sh <IP_SIEM> 514
+```
+
+**Procédure de Test:**
+1. Configurer SIEM cible (IP, port, protocole)
+2. Exécuter scripts de test
+3. Remplir `TEST_PROCEDURE.md` avec résultats
+4. Valider parsing, alertes, dashboards
+
+**Critères de Validation:**
+- [ ] Events reçus sans perte (<1%)
+- [ ] Parsing correct des champs clés
+- [ ] Timestamps corrects
+- [ ] Alertes de corrélation fonctionnent
+- [ ] Performance acceptable (latence <1s)
+
+---
+
 ### Phase 4: Basic Scenarios ⏸️ NOT STARTED
 **Timeline:** Week 9-10  
 **Progress:** 0%
