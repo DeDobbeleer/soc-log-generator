@@ -36,6 +36,12 @@ Before committing, verify:
   - STATUS.md
   - test_scripts/*.sh
   - test_scripts/README.md
+- 2026-03-07: Complete translation of remaining French text
+  - config/default.yaml
+  - generators/endpoint/windows_generator.py
+  - generators/endpoint/linux_generator.py
+  - generators/endpoint/nxlog_windows.py
+  - CONTRIBUTING.md
 
 ## Exceptions
 

@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-Load Controller - Modes de génération avancés
+Load Controller - Advanced Generation Modes
 
-Importé depuis nxlog_simulator.py
-Fonctionnalités:
-- Mode RAMP: Montée progressive du débit
-- Mode BURST: Pics aléatoires de trafic
-- Mode CONSTANT: Débit fixe
+Imported from nxlog_simulator.py
+Features:
+- RAMP Mode: Progressive rate increase
+- BURST Mode: Random traffic spikes
+- CONSTANT Mode: Fixed rate
 """
 
 import random
@@ -20,23 +20,23 @@ from core import RateLimiter, LogEvent, OutputHandler
 
 class LoadController:
     """
-    Contrôleur de charge pour modes avancés de génération.
+    Load controller for advanced generation modes.
     
-    Modes supportés:
-    - constant: Débit fixe
-    - ramp: Montée progressive (start_eps → max_eps)
-    - burst: Pics aléatoires de trafic
+    Supported modes:
+    - constant: Fixed rate
+    - ramp: Progressive increase (start_eps → max_eps)
+    - burst: Random traffic spikes
     """
     
     def __init__(self, start_eps: float, max_eps: float, ramp_duration: int, mode: str = "ramp"):
         """
-        Initialise le contrôleur.
+        Initialize the controller.
         
         Args:
-            start_eps: EPS de départ
-            max_eps: EPS maximum
-            ramp_duration: Durée de montée en secondes
-            mode: constant, ramp, ou burst
+            start_eps: Starting EPS
+            max_eps: Maximum EPS
+            ramp_duration: Ramp duration in seconds
+            mode: constant, ramp, or burst
         """
         self.start_eps = start_eps
         self.max_eps = max_eps
@@ -47,152 +47,149 @@ class LoadController:
         
     def update(self) -> float:
         """
-        Met à jour le débit courant selon le mode.
+        Update current rate according to mode.
         
         Returns:
-            EPS actuel à utiliser
+            Current EPS target
         """
+        elapsed = time.time() - self.start_time
+        
         if self.mode == "constant":
             return self.max_eps
             
         elif self.mode == "ramp":
-            if self.ramp_duration <= 0:
-                return self.max_eps
-                
-            elapsed = time.time() - self.start_time
             if elapsed >= self.ramp_duration:
                 return self.max_eps
-                
             progress = elapsed / self.ramp_duration
-            self.current_eps = self.start_eps + (self.max_eps - self.start_eps) * progress
-            return self.current_eps
+            return self.start_eps + (self.max_eps - self.start_eps) * progress
             
         elif self.mode == "burst":
-            # 5% chance de pic
-            if random.random() < 0.05:
-                self.current_eps = random.uniform(self.start_eps, self.max_eps)
-            else:
-                self.current_eps = self.start_eps
-            return self.current_eps
+            # Random spikes every 10-30 seconds
+            spike_interval = random.randint(10, 30)
+            if int(elapsed) % spike_interval == 0:
+                return self.max_eps * random.uniform(1.5, 3.0)
+            return self.start_eps + (self.max_eps - self.start_eps) * 0.5
             
-        else:
-            return self.max_eps
-    
-    def get_stats(self) -> str:
-        """Retourne les statistiques courantes."""
-        elapsed = time.time() - self.start_time
-        if self.mode == "ramp":
-            progress = min(100, (elapsed / self.ramp_duration) * 100) if self.ramp_duration > 0 else 100
-            return f"Target: {self.current_eps:.1f} EPS | Progress: {progress:.0f}%"
-        else:
-            return f"Target: {self.current_eps:.1f} EPS | Mode: {self.mode}"
+        return self.current_eps
 
 
-class StatsReporter(threading.Thread):
+class StatsReporter:
     """
-    Affichage temps réel des statistiques de génération.
+    Real-time generation statistics display.
     
-    Importé depuis nxlog_simulator.py
+    Displays:
+    - Generated events
+    - Current EPS
+    - Active output handlers
+    - Errors
     """
     
-    def __init__(self, outputs: List[OutputHandler], controller: LoadController, interval: int = 5):
+    def __init__(self, outputs: List[OutputHandler], controller: LoadController, interval: int = 10):
         """
-        Initialise le reporter de stats.
+        Initialize the reporter.
         
         Args:
-            outputs: Liste des handlers de sortie
-            controller: Contrôleur de charge
-            interval: Intervalle d'affichage en secondes
+            outputs: List of output handlers
+            controller: Load controller
+            interval: Display interval in seconds
         """
-        super().__init__(daemon=True)
         self.outputs = outputs
         self.controller = controller
         self.interval = interval
-        self.running = True
-        self.last_sent = 0
-        self.last_time = time.time()
-        self.total_stats = {"sent": 0, "errors": 0}
+        self.running = False
+        self.thread: Optional[threading.Thread] = None
+        self.stats = {"generated": 0, "errors": 0, "start_time": time.time()}
         
-    def run(self):
-        """Boucle d'affichage des statistiques."""
+    def start(self):
+        """Start the reporter."""
+        self.running = True
+        self.thread = threading.Thread(target=self._run)
+        self.thread.daemon = True
+        self.thread.start()
+        
+    def _run(self):
+        """Main reporter loop."""
         while self.running:
             time.sleep(self.interval)
-            now = time.time()
-            elapsed = now - self.last_time
+            self._print_stats()
             
-            # Calculer les stats
-            total_sent = getattr(self, '_total_sent', 0)
-            total_errors = getattr(self, '_total_errors', 0)
-            
-            current_eps = (total_sent - self.last_sent) / elapsed if elapsed > 0 else 0
-            
-            print(f"\n[STATS] {datetime.now().strftime('%H:%M:%S')} | "
-                  f"{self.controller.get_stats()} | "
-                  f"Current: {current_eps:.1f} EPS | "
-                  f"Total: {total_sent:,} | "
-                  f"Errors: {total_errors}")
-            
-            self.last_sent = total_sent
-            self.last_time = now
-    
-    def update_stats(self, sent: int, errors: int):
-        """Met à jour les statistiques (appelé par le générateur)."""
-        self._total_sent = sent
-        self._total_errors = errors
-    
+    def _print_stats(self):
+        """Display statistics."""
+        elapsed = time.time() - self.stats["start_time"]
+        eps = self.stats["generated"] / elapsed if elapsed > 0 else 0
+        target_eps = self.controller.current_eps
+        
+        print(f"\n[{datetime.now().strftime('%H:%M:%S')}] Stats:")
+        print(f"  Generated: {self.stats['generated']:,} events")
+        print(f"  Rate: {eps:.1f} EPS (target: {target_eps:.1f})")
+        print(f"  Errors: {self.stats['errors']}")
+        print(f"  Active outputs: {len(self.outputs)}")
+        
+    def update_stats(self, generated: int, errors: int):
+        """Update statistics (called by generator)."""
+        self.stats["generated"] += generated
+        self.stats["errors"] += errors
+        
     def stop(self):
-        """Arrête le reporter."""
+        """Stop the reporter."""
         self.running = False
+        if self.thread:
+            self.thread.join(timeout=1.0)
 
 
 class MultiClientGenerator:
     """
-    Générateur avec multiple clients parallèles.
+    Generator with multiple parallel clients.
     
-    Importé depuis nxlog_simulator.py - Support multi-threading
+    Allows parallel generation for higher EPS.
     """
     
-    def __init__(self, outputs: List[OutputHandler], generator_fn: Callable, controller: LoadController):
+    def __init__(self, generator_fn: Callable[[], LogEvent], client_count: int = 1):
         """
-        Initialise le générateur multi-client.
+        Initialize multi-client generator.
         
         Args:
-            outputs: Liste des handlers de sortie
-            generator_fn: Fonction de génération d'événements
-            controller: Contrôleur de charge
+            generator_fn: Event generation function
+            client_count: Number of parallel clients
         """
-        self.outputs = outputs
         self.generator_fn = generator_fn
-        self.controller = controller
-        self.current_client = 0
-        self.total_sent = 0
-        self.total_errors = 0
+        self.client_count = client_count
+        self.threads: List[threading.Thread] = []
+        self.running = False
         
-    def generate_and_send(self) -> bool:
+    def start(self, duration: Optional[int] = None):
         """
-        Génère un événement et l'envoie au client suivant.
+        Start generation.
         
-        Returns:
-            True si succès, False sinon
+        Args:
+            duration: Duration in seconds (None = infinite)
         """
-        event = self.generator_fn()
-        output = self.outputs[self.current_client]
+        self.running = True
         
-        success = output.write(event)
-        if success:
-            self.total_sent += 1
-        else:
-            self.total_errors += 1
+        def worker():
+            start = time.time()
+            while self.running:
+                if duration and (time.time() - start) >= duration:
+                    break
+                event = self.generator_fn()
+                # Event is handled by caller
+                
+        for i in range(self.client_count):
+            t = threading.Thread(target=worker, name=f"Generator-{i}")
+            t.daemon = True
+            t.start()
+            self.threads.append(t)
             
-        # Round-robin entre les clients
-        self.current_client = (self.current_client + 1) % len(self.outputs)
-        
-        return success
-    
-    def get_stats(self) -> dict:
-        """Retourne les statistiques courantes."""
-        return {
-            "sent": self.total_sent,
-            "errors": self.total_errors,
-            "active_clients": len(self.outputs)
-        }
+    def stop(self):
+        """Stop generation."""
+        self.running = False
+        for t in self.threads:
+            t.join(timeout=2.0)
+
+
+# Legacy compatibility
+SyslogClient = None  # Now in core.py
+LoadController = LoadController
+StatsReporter = StatsReporter
+
+__all__ = ['LoadController', 'StatsReporter', 'MultiClientGenerator']

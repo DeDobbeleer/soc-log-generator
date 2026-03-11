@@ -2,10 +2,10 @@
 """
 NXLog Windows Event Generator
 
-Générateur spécifique format NXLog JSON avec structure CEE (Common Event Expression)
-compatible LogPoint.
+Specific generator for NXLog JSON format with CEE (Common Event Expression)
+structure compatible with LogPoint.
 
-Importé depuis nxlog_simulator.py - Format natif NXLog (im_msvistalog + xm_json)
+Imported from nxlog_simulator.py - Native NXLog format (im_msvistalog + xm_json)
 """
 
 import json
@@ -23,12 +23,12 @@ except (ImportError, ValueError):
 
 class NXLogWindowsGenerator(BaseGenerator):
     """
-    Generateur Windows Event Log au format JSON NXLog natif.
+    Windows Event Log generator in native NXLog JSON format.
     
-    Ce format est spécifiquement conçu pour être compatible avec:
+    This format is specifically designed to be compatible with:
     - NXLog (im_msvistalog + xm_json)
     - LogPoint SIEM
-    - Structure CEE (Common Event Expression)
+    - CEE (Common Event Expression) structure
     """
     
     HOSTS = [
@@ -101,17 +101,17 @@ class NXLogWindowsGenerator(BaseGenerator):
     def __init__(self, config: Dict[str, Any], inventory: AssetInventory):
         super().__init__(config)
         self.inventory = inventory
-        # Distribution réaliste: Security 60%, System 25%, Application 10%, Sysmon 5%
+        # Realistic distribution: Security 60%, System 25%, Application 10%, Sysmon 5%
         self.channel_weights = config.get('channel_weights', [60, 25, 10, 5])
     
     def generate_event(self) -> LogEvent:
-        """Génère un événement au format NXLog JSON natif."""
+        """Generate an event in native NXLog JSON format."""
         hostname = random.choice(self.HOSTS)
         user = random.choice(self.USERS)
         ip = random.choice(self.IPS)
         process = random.choice(self.PROCESSES)
         
-        # Sélection du canal
+        # Channel selection
         channel = random.choices(
             list(self.EVENTS.keys()), 
             weights=self.channel_weights
@@ -122,10 +122,10 @@ class NXLogWindowsGenerator(BaseGenerator):
         # Timestamp format NXLog: YYYY-MM-DD HH:MM:SS (UTC)
         event_time = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
         
-        # Personnalisation du message
+        # Message customization
         msg = msg_template.replace("%1", process).replace("%2", "running").replace("%3", "0x0000")
         
-        # Structure JSON exacte NXLog (im_msvistalog + xm_json)
+        # Exact NXLog JSON structure (im_msvistalog + xm_json)
         nxlog_event = {
             # Core fields
             "EventTime": event_time,

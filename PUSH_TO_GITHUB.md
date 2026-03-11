@@ -2,21 +2,21 @@
 
 ## Commit Status
 
-✅ **Commit créé localement avec succès**
+✅ **Commit created locally successfully**
 
 ```
 786456b feat: integrate legacy nxlog_simulator features
 ```
 
-## Étapes pour pousser sur GitHub
+## Steps to push to GitHub
 
-### 1. Créer le repository sur GitHub
+### 1. Create repository on GitHub
 
-Allez sur https://github.com/new et créez un repository nommé `soc-log-generator`
+Go to https://github.com/new and create a repository named `soc-log-generator`
 
-**Ne pas** initialiser avec README (déjà présent localement)
+**Do not** initialize with README (already present locally)
 
-### 2. Pousser le code
+### 2. Push code
 
 ```bash
 cd /home/gado/dev/misc/soc-log-generator
@@ -24,27 +24,27 @@ git remote add origin git@github.com:gado/soc-log-generator.git
 git push -u origin main
 ```
 
-### Alternative avec token HTTPS
+### Alternative with HTTPS token
 
-Si SSH ne fonctionne pas :
+If SSH doesn't work:
 
 ```bash
-# Générer un token sur https://github.com/settings/tokens
+# Generate token at https://github.com/settings/tokens
 git remote set-url origin https://TOKEN@github.com/gado/soc-log-generator.git
 git push -u origin main
 ```
 
-## Résumé des changements commités
+## Summary of committed changes
 
-| Fichier | Changement |
-|---------|------------|
-| `core.py` | + SyslogClient avec reconnexion auto |
-| `load_controller.py` | Nouveau - LoadController + StatsReporter |
-| `cli.py` | Intégration multi-mode et générateurs |
-| `generators/endpoint/nxlog_windows.py` | Nouveau générateur NXLog |
-| `STATUS.md` | Mise à jour avec Legacy Integration |
+| File | Change |
+|------|--------|
+| `core.py` | + SyslogClient with auto-reconnection |
+| `load_controller.py` | New - LoadController + StatsReporter |
+| `cli.py` | Multi-mode and generators integration |
+| `generators/endpoint/nxlog_windows.py` | New NXLog generator |
+| `STATUS.md` | Updated with Legacy Integration |
 
 **Stats:**
-- 5 fichiers changés
-- 675 insertions(+), 39 suppressions(-)
-- ~4,900 lignes de code total
+- 5 files changed
+- 675 insertions(+), 39 deletions(-)
+- ~4,900 total lines of code

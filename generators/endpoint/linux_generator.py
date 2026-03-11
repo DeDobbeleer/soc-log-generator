@@ -29,7 +29,7 @@ except (ImportError, ValueError):
 
 
 class LinuxAuthGenerator(BaseGenerator):
-    """Generateur de logs Linux pour SOC"""
+    """Linux log generator for SOC environments"""
     
     FACILITIES = ['auth', 'authpriv', 'cron', 'daemon', 'kern', 'mail', 'user', 'local0']
     PRIORITIES = ['debug', 'info', 'notice', 'warning', 'err', 'crit', 'alert', 'emerg']
@@ -105,14 +105,14 @@ class LinuxAuthGenerator(BaseGenerator):
         return asset
     
     def _generate_sshd_event(self) -> LogEvent:
-        """Genere un evenement SSH"""
+        """Generate an SSH authentication event"""
         asset = self._get_random_linux_asset()
         user = self.inventory.get_random_user()
         timestamp = datetime.now(timezone.utc)
         
         template, level, severity = random.choice(self.SERVICES['sshd'])
         
-        # IPs externes ou internes
+        # External or internal IPs
         if random.random() < 0.3:
             src_ip = f"{random.randint(1, 223)}.{random.randint(0, 255)}.{random.randint(0, 255)}.{random.randint(1, 254)}"
         else:
@@ -137,7 +137,7 @@ class LinuxAuthGenerator(BaseGenerator):
             'priority': level,
         }
         
-        # Detection de brute force
+        # Brute force detection
         if 'Failed password' in msg and random.random() < 0.1:
             severity = EventSeverity.HIGH
             tags = ['linux', 'auth', 'ssh', 'brute_force', 'suspicious']
@@ -157,7 +157,7 @@ class LinuxAuthGenerator(BaseGenerator):
         )
     
     def _generate_sudo_event(self) -> LogEvent:
-        """Genere un evenement sudo"""
+        """Generate a sudo event"""
         asset = self._get_random_linux_asset()
         user = self.inventory.get_random_user()
         timestamp = datetime.now(timezone.utc)
@@ -167,9 +167,9 @@ class LinuxAuthGenerator(BaseGenerator):
         tty = random.choice(['pts/0', 'pts/1', 'tty1', 'tty2'])
         pwd = random.choice(['/home/' + user['username'], '/etc', '/var/log', '/tmp', '/opt'])
         
-        # Commandes suspectes occasionnelles
+        # Occasional suspicious commands
         if random.random() < 0.05:
-            cmd = random.choice(self.COMMANDS[-3:])  # Commandes potentiellement malveillantes
+            cmd = random.choice(self.COMMANDS[-3:])  # Potentially malicious commands
             severity = EventSeverity.HIGH
             tags = ['linux', 'sudo', 'suspicious_command', 'privilege_escalation']
         else:
@@ -214,7 +214,7 @@ class LinuxAuthGenerator(BaseGenerator):
         )
     
     def _generate_audit_event(self) -> LogEvent:
-        """Genere un evenement auditd"""
+        """Generate an auditd event"""
         asset = self._get_random_linux_asset()
         timestamp = datetime.now(timezone.utc)
         
@@ -253,7 +253,7 @@ class LinuxAuthGenerator(BaseGenerator):
             'key': key,
         }
         
-        # Syscalls suspects
+        # Suspicious syscalls
         severity = EventSeverity.HIGH if syscall in ['59', '42'] and random.random() < 0.3 else EventSeverity.LOW
         tags = ['linux', 'auditd', 'syscall', syscall_names.get(syscall, 'unknown')]
         if severity == EventSeverity.HIGH:
@@ -274,7 +274,7 @@ class LinuxAuthGenerator(BaseGenerator):
         )
     
     def generate_event(self) -> LogEvent:
-        """Genere un evenement Linux aleatoire"""
+        """Generate a random Linux event"""
         service = random.choices(['sshd', 'sudo', 'auditd'], weights=[50, 30, 20])[0]
         
         if service == 'sshd':

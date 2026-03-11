@@ -1,13 +1,13 @@
-# SOC Log Generator - Configuration par defaut
-# Ce fichier configure les generateurs de logs pour simulation SOC/MSSP
+# SOC Log Generator - Default Configuration
+# This file configures log generators for SOC/MSSP simulation
 
-# Configuration globale
+# Global configuration
 global:
   timezone: "UTC"
   log_format: "ecs"  # ecs, cef, json
   
-# Inventaire des assets (optionnel)
-# Si non specifie, un inventaire par defaut est genere
+# Asset inventory (optional)
+# If not specified, a default inventory is generated
 inventory:
   domains:
     - corp.local
@@ -28,17 +28,17 @@ inventory:
       dept: Finance
       role: user
 
-# Generateurs de logs
+# Log generators
 generators:
   # Windows Event Logs
   windows:
     enabled: true
     type: windows
-    eps: 150              # Events per second de base
-    weight: 1.0           # Poids relatif par rapport aux autres generateurs
-    business_hours_mult: 2.0  # Multiplicateur heures de bureau
+    eps: 150              # Base events per second
+    weight: 1.0           # Relative weight compared to other generators
+    business_hours_mult: 2.0  # Business hours multiplier
     
-    # Canaux Windows a generer
+    # Windows channels to generate
     channels:
       - Security
       - System
@@ -46,7 +46,7 @@ generators:
       - Sysmon
       - PowerShell
     
-    # Distribution des canaux (doit sommer a 100)
+    # Channel distribution (must sum to 100)
     channel_weights:
       - 50   # Security
       - 15   # System
@@ -62,7 +62,7 @@ generators:
     weight: 0.8
     business_hours_mult: 1.5
     
-    # Services a simuler
+    # Services to simulate
     services:
       - sshd
       - sudo
@@ -70,7 +70,7 @@ generators:
       - auditd
       - kernel
     
-    # Distribution des services
+    # Service distribution
     service_weights:
       - 40   # sshd
       - 25   # sudo
@@ -86,17 +86,17 @@ generators:
     eps: 300
     weight: 1.5
     
-    # Types de logs
+    # Log types
     log_types:
       - TRAFFIC
       - THREAT
       - URL
       - DATA
     
-    # Distribution traffic vs threat
-    threat_ratio: 0.05    # 5% de logs de menace
+    # Traffic vs threat distribution
+    threat_ratio: 0.05    # 5% threat logs
 
-  # Proxy Web (optionnel)
+  # Web Proxy (optional)
   proxy:
     enabled: false
     type: proxy
@@ -104,7 +104,7 @@ generators:
     eps: 100
     weight: 0.5
 
-  # DNS Logs (optionnel)
+  # DNS Logs (optional)
   dns:
     enabled: false
     type: dns
@@ -112,7 +112,7 @@ generators:
     eps: 500
     weight: 2.0
 
-  # Cloud - AWS (optionnel)
+  # Cloud - AWS (optional)
   aws:
     enabled: false
     type: cloud
@@ -120,7 +120,7 @@ generators:
     eps: 50
     weight: 0.3
 
-  # Cloud - Azure (optionnel)
+  # Cloud - Azure (optional)
   azure:
     enabled: false
     type: cloud
@@ -128,7 +128,7 @@ generators:
     eps: 40
     weight: 0.25
 
-  # Office 365 (optionnel)
+  # Office 365 (optional)
   o365:
     enabled: false
     type: cloud
@@ -136,25 +136,25 @@ generators:
     eps: 60
     weight: 0.4
 
-  # EDR - CrowdStrike (optionnel)
+  # EDR - CrowdStrike (optional)
   crowdstrike:
     enabled: false
     type: edr
     eps: 30
     weight: 0.2
 
-  # EDR - Microsoft Defender (optionnel)
+  # EDR - Microsoft Defender (optional)
   defender:
     enabled: false
     type: edr
     eps: 25
     weight: 0.15
 
-# Scenarios d'attaque a injecter
+# Attack scenarios to inject
 scenarios:
   enabled: true
   
-  # Liste des scenarios disponibles
+  # List of available scenarios
   available:
     - brute_force_ssh
     - lateral_movement_smb
@@ -163,10 +163,10 @@ scenarios:
     - phishing_campaign
     - insider_threat
   
-  # Probabilite d'injection d'un scenario (par heure)
+  # Scenario injection probability (per hour)
   injection_probability: 0.1
   
-  # Configuration specifique des scenarios
+  # Scenario-specific configuration
   brute_force_ssh:
     duration: 300         # 5 minutes
     attempts: 50
@@ -182,46 +182,46 @@ scenarios:
       - wmi_exec
       - scheduled_task
 
-# Configuration des sorties
+# Output configuration
 outputs:
-  # Sortie fichier local
+  # Local file output
   - type: file
     path: /var/log/soc-generator/logs.json
     rotation_size: 100MB
     format: json
   
-  # Sortie Syslog TCP
+  # Syslog TCP output
   - type: syslog
     host: 10.0.0.1
     port: 514
     protocol: tcp
     format: syslog        # syslog, json, cef
   
-  # Sortie Syslog UDP (optionnel)
+  # Syslog UDP output (optional)
   # - type: syslog
   #   host: 10.0.0.2
   #   port: 514
   #   protocol: udp
   #   format: json
 
-# Parametres de performance
+# Performance parameters
 performance:
-  # Nombre de threads de generation
+  # Number of generation threads
   threads: 4
   
-  # Taille du buffer d'evenements
+  # Event buffer size
   buffer_size: 10000
   
-  # Mode batch pour haut debit
+  # Batch mode for high throughput
   batch_mode: true
   batch_size: 100
 
-# Monitoring et metriques
+# Monitoring and metrics
 monitoring:
-  # Affiche les stats toutes les N secondes
+  # Display stats every N seconds
   stats_interval: 5
   
-  # Active les metriques Prometheus
+  # Enable Prometheus metrics
   prometheus_enabled: false
   prometheus_port: 9090
   

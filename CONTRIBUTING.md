@@ -262,7 +262,7 @@ When adding features, update:
 
 - Use clear, concise language
 - Include code examples
-- Keep language consistent (French for user docs, English for code/docs)
+- Use English for all documentation and code
 - Use markdown formatting
 
 ## Commit Messages

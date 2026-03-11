@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Generateur de logs Windows Event Log
-Supporte: Security, System, Application, Sysmon, PowerShell
+Windows Event Log Generator
+Supports: Security, System, Application, Sysmon, PowerShell
 """
 
 import json
@@ -17,9 +17,9 @@ except (ImportError, ValueError):
 
 
 class WindowsEventGenerator(BaseGenerator):
-    """Generateur de logs Windows complet pour SOC"""
+    """Complete Windows log generator for SOC environments"""
     
-    # Evenements Windows critiques pour SOC
+    # Critical Windows events for SOC monitoring
     SECURITY_EVENTS = {
         4624: ("An account was successfully logged on", "AUDIT_SUCCESS", EventSeverity.LOW),
         4625: ("An account failed to log on", "AUDIT_FAILURE", EventSeverity.HIGH),
@@ -102,7 +102,7 @@ class WindowsEventGenerator(BaseGenerator):
         self.channel_weights = config.get('channel_weights', [60, 20, 10, 10])
         
     def _get_random_windows_asset(self) -> Dict:
-        """Recupere un asset Windows aleatoire"""
+        """Get a random Windows asset from inventory"""
         workstations = {k: v for k, v in self.inventory.assets.items() if v.get("type") == "workstation"}
         if not workstations:
             return {"hostname": "WK-WIN-001", "ip": "10.0.10.11", "domain": "corp.local"}
@@ -112,7 +112,7 @@ class WindowsEventGenerator(BaseGenerator):
         return asset
     
     def _generate_security_event(self) -> LogEvent:
-        """Genere un evenement de securite Windows"""
+        """Generate a Windows security event"""
         asset = self._get_random_windows_asset()
         event_id = random.choices(list(self.SECURITY_EVENTS.keys()), weights=[
             30, 5, 20, 10, 5, 15, 10, 2, 1, 2, 3, 2, 5, 5, 3, 5, 2
@@ -139,7 +139,7 @@ class WindowsEventGenerator(BaseGenerator):
             "SubStatus": "0x0" if event_type == "AUDIT_SUCCESS" else "0xC000006A",
         }
         
-        # Ajouter des champs specifiques selon l'event ID
+        # Add specific fields based on event ID
         if event_id == 4688:
             proc_name, proc_path, company = random.choice(self.COMMON_PROCESSES + self.SUSPICIOUS_PROCESSES)
             fields["NewProcessName"] = proc_path
@@ -165,7 +165,7 @@ class WindowsEventGenerator(BaseGenerator):
         )
     
     def _generate_sysmon_event(self) -> LogEvent:
-        """Genere un evenement Sysmon"""
+        """Generate a Sysmon event"""
         asset = self._get_random_windows_asset()
         event_id = random.choices(list(self.SYSMON_EVENTS.keys()), weights=[
             40, 2, 20, 10, 2, 5, 2, 3, 2, 10, 3, 3, 2, 2, 2, 1, 1, 2, 1, 1, 1, 5, 3, 2, 1, 1
@@ -185,7 +185,7 @@ class WindowsEventGenerator(BaseGenerator):
         }
         
         if event_id == 1:  # Process Create
-            if random.random() < 0.1:  # 10% chance de processus suspect
+            if random.random() < 0.1:  # 10% chance of suspicious process
                 proc_name, proc_path, company = random.choice(self.SUSPICIOUS_PROCESSES)
                 cmdline = f'{proc_path} -enc { "".join([random.choice("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=") for _ in range(100)])}'
                 severity = EventSeverity.HIGH
@@ -221,7 +221,7 @@ class WindowsEventGenerator(BaseGenerator):
             fields["SourcePort"] = random.randint(49152, 65535)
             fields["SourcePortName"] = "-"
             fields["DestinationIsIpv6"] = False
-            # IPs externes diverses
+            # Various external IPs
             if random.random() < 0.3:
                 fields["DestinationIp"] = random.choice([
                     "8.8.8.8", "1.1.1.1", "208.67.222.222",  # DNS
@@ -261,7 +261,7 @@ class WindowsEventGenerator(BaseGenerator):
         )
     
     def _generate_system_event(self) -> LogEvent:
-        """Genere un evenement System"""
+        """Generate a System event"""
         asset = self._get_random_windows_asset()
         timestamp = datetime.now(timezone.utc)
         
@@ -301,7 +301,7 @@ class WindowsEventGenerator(BaseGenerator):
         )
     
     def generate_event(self) -> LogEvent:
-        """Genere un evenement Windows aleatoire selon la distribution configuree"""
+        """Generate a random Windows event based on configured distribution"""
         channel = random.choices(self.channels, weights=self.channel_weights)[0]
         
         if channel == "Security":
@@ -311,4 +311,4 @@ class WindowsEventGenerator(BaseGenerator):
         elif channel == "System":
             return self._generate_system_event()
         else:  # Application
-            return self._generate_security_event()  # Fallback pour l'instant
+            return self._generate_security_event()  # Fallback for now
