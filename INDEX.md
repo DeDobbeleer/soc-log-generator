@@ -13,6 +13,24 @@
 | [SPECS.md](SPECS.md) | Technical specifications (35KB): architecture, APIs, data models, AI integration | Architects, developers | ✅ Complete |
 | [README.md](README.md) | Quick start guide, usage examples, feature overview | End users, evaluators | 📝 Draft |
 
+## Research & Validation
+
+| Document | Description | Audience | Status |
+|----------|-------------|----------|--------|
+| [RESEARCH_AND_VALIDATION.md](RESEARCH_AND_VALIDATION.md) | **Cahier de recherche et validation** - Methodology for ensuring log accuracy, version management, continuous improvement | Researchers, developers, QA | ✅ Complete |
+| [REFERENCE_SOURCES.md](REFERENCE_SOURCES.md) | Registry of authoritative sources for all log formats with documentation links and version history | Researchers, developers | ✅ Complete |
+| [SAMPLE_COLLECTION_TEMPLATE.md](SAMPLE_COLLECTION_TEMPLATE.md) | Standardized template for collecting and documenting real log samples | Researchers, analysts | ✅ Complete |
+
+### Validation Tools
+
+| Tool | Path | Purpose | Status |
+|------|------|---------|--------|
+| **Reality Checker** | [validation/reality_checker.py](validation/reality_checker.py) | Compare generated logs with real samples | ✅ Complete |
+| **Version Manager** | [validation/version_manager.py](validation/version_manager.py) | Track and manage format versions | ✅ Complete |
+| **Sample Collector** | [validation/sample_collector.py](validation/sample_collector.py) | Collect and anonymize real samples | ✅ Complete |
+| **Report Generator** | [validation/report_generator.py](validation/report_generator.py) | Generate accuracy reports | ✅ Complete |
+| **Validation Runner** | [validation/run_all.py](validation/run_all.py) | Run complete validation suite | ✅ Complete |
+
 ---
 
 ## Configuration
